@@ -1,0 +1,49 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getTags, getPublishedArticles } from '../../lib/spreadsheet';
+
+const tags = await getTags();
+const articles = await getPublishedArticles();
+
+// 各タグの記事数をカウント
+const tagArticleCounts = new Map<number, number>();
+articles.forEach(article => {
+  article.tags.forEach(tagId => {
+    const count = tagArticleCounts.get(tagId) || 0;
+    tagArticleCounts.set(tagId, count + 1);
+  });
+});
+
+// 記事数でソート
+const sortedTags = [...tags].sort((a, b) => {
+  const countA = tagArticleCounts.get(a.id) || 0;
+  const countB = tagArticleCounts.get(b.id) || 0;
+  return countB - countA;
+});
+---
+
+<BaseLayout 
+  title="タグ一覧"
+  description="SpreadMediaの全タグ一覧です。興味のあるトピックからお探しの記事を見つけてください。"
+>
+  <div class="max-w-6xl mx-auto px-4 py-12">
+    <h1 class="text-3xl font-bold text-gray-900 mb-8">タグ一覧</h1>
+    
+    <div class="flex flex-wrap gap-3">
+      {sortedTags.map((tag) => {
+        const articleCount = tagArticleCounts.get(tag.id) || 0;
+        return (
+          <a 
+            href={`/tags/${tag.slug}`}
+            class="inline-flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-full transition-colors"
+          >
+            <span>#{tag.name}</span>
+            <span class="bg-gray-200 text-gray-600 text-xs px-2 py-0.5 rounded-full">
+              {articleCount}
+            </span>
+          </a>
+        );
+      })}
+    </div>
+  </div>
+</BaseLayout>

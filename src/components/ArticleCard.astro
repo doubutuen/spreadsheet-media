@@ -1,0 +1,108 @@
+---
+import type { Article, Category, Author } from '../types';
+
+interface Props {
+  article: Article;
+  category?: Category;
+  author?: Author;
+}
+
+const { article, category, author } = Astro.props;
+
+// 日付をフォーマット
+const formatDate = (dateString: string) => {
+  const date = new Date(dateString);
+  return date.toLocaleDateString('ja-JP', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+};
+
+// 記事の要約を生成（最初の150文字）
+const excerpt = article.content
+  .replace(/^\[speaker:\w+\]\s*$/gm, '') // インタビュー記法を削除
+  .replace(/^#+\s+.+$/gm, '') // 見出しを削除
+  .replace(/\*\*/g, '') // 太字マークダウンを削除
+  .replace(/!\[.*?\]\(.*?\)/g, '') // 画像マークダウンを削除
+  .replace(/\n+/g, ' ') // 改行をスペースに
+  .trim()
+  .slice(0, 150) + '...';
+
+// 記事タイプのラベル
+const articleTypeLabel = article.articleType === 'interview' ? 'インタビュー' : null;
+---
+
+<article class="card group overflow-hidden">
+  <a href={`/articles/${article.slug}`} class="block">
+    <!-- サムネイル画像 -->
+    {article.thumbnail && (
+      <div class="relative aspect-video overflow-hidden -mx-6 -mt-6 mb-4">
+        <img 
+          src={article.thumbnail} 
+          alt={article.title}
+          class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          loading="lazy"
+        />
+        {articleTypeLabel && (
+          <span class="absolute top-3 left-3 bg-indigo-600 text-white text-xs font-bold px-2 py-1 rounded">
+            {articleTypeLabel}
+          </span>
+        )}
+      </div>
+    )}
+    
+    <div class="flex flex-col h-full">
+      <!-- カテゴリバッジ -->
+      <div class="mb-3 flex items-center gap-2">
+        {category && (
+          <span class="category-badge">{category.name}</span>
+        )}
+        {!article.thumbnail && articleTypeLabel && (
+          <span class="bg-indigo-100 text-indigo-700 text-xs font-medium px-2 py-1 rounded">
+            {articleTypeLabel}
+          </span>
+        )}
+      </div>
+      
+      <!-- タイトル -->
+      <h2 class="text-xl font-bold text-gray-900 group-hover:text-blue-600 transition-colors mb-3">
+        {article.title}
+      </h2>
+      
+      <!-- 要約 -->
+      <p class="text-gray-600 text-sm leading-relaxed mb-4 flex-grow">
+        {excerpt}
+      </p>
+      
+      <!-- メタ情報 -->
+      <div class="flex items-center justify-between text-sm text-gray-500 pt-4 border-t border-gray-100">
+        <div class="flex items-center gap-2">
+          {author && (
+            <>
+              {author.avatar ? (
+                <img 
+                  src={author.avatar} 
+                  alt={author.name}
+                  class="w-6 h-6 rounded-full object-cover"
+                />
+              ) : (
+                <div class="w-6 h-6 rounded-full bg-gray-300 flex items-center justify-center text-xs text-gray-600 font-medium">
+                  {author.name.charAt(0)}
+                </div>
+              )}
+              <span class="font-medium text-gray-700">{author.name}</span>
+              <span>·</span>
+            </>
+          )}
+          <time datetime={article.publishedAt}>
+            {formatDate(article.publishedAt)}
+          </time>
+        </div>
+        <span class="text-blue-600 group-hover:translate-x-1 transition-transform">
+          続きを読む →
+        </span>
+      </div>
+    </div>
+  </a>
+</article>

@@ -1,0 +1,70 @@
+---
+/**
+ * インタビュー発言ブロックコンポーネント
+ * 話者のアバター、名前、発言内容を表示
+ */
+import type { Interviewee } from '../types';
+
+interface Props {
+  speaker: Interviewee;
+  content: string;
+  isInterviewer?: boolean;
+}
+
+const { speaker, content, isInterviewer = false } = Astro.props;
+
+// デフォルトアバター（名前の頭文字）
+const initials = speaker.name.charAt(0);
+---
+
+<div class={`interview-block flex gap-4 my-6 ${isInterviewer ? 'flex-row-reverse' : ''}`}>
+  <!-- アバター -->
+  <div class="flex-shrink-0">
+    {speaker.avatar ? (
+      <img 
+        src={speaker.avatar} 
+        alt={speaker.name}
+        class="w-12 h-12 rounded-full object-cover border-2 border-gray-200"
+      />
+    ) : (
+      <div class={`w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg ${isInterviewer ? 'bg-blue-500' : 'bg-indigo-500'}`}>
+        {initials}
+      </div>
+    )}
+  </div>
+  
+  <!-- 発言内容 -->
+  <div class={`flex-1 ${isInterviewer ? 'text-right' : ''}`}>
+    <!-- 話者情報 -->
+    <div class={`mb-1 ${isInterviewer ? 'flex justify-end items-center gap-2' : 'flex items-center gap-2'}`}>
+      <span class="font-bold text-gray-900">{speaker.name}</span>
+      {speaker.role && (
+        <span class="text-sm text-gray-500">（{speaker.role}）</span>
+      )}
+    </div>
+    
+    <!-- 吹き出し -->
+    <div class={`relative inline-block max-w-full ${isInterviewer ? 'ml-auto' : ''}`}>
+      <div class={`p-4 rounded-2xl ${isInterviewer ? 'bg-blue-50 rounded-tr-none' : 'bg-gray-100 rounded-tl-none'}`}>
+        <p class="text-gray-700 leading-relaxed whitespace-pre-wrap">{content}</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .interview-block {
+    animation: fadeIn 0.3s ease-out;
+  }
+  
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+</style>

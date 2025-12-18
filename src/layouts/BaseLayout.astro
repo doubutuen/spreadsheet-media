@@ -1,0 +1,140 @@
+---
+import '../styles/global.css';
+
+interface Props {
+  title: string;
+  description?: string;
+  ogImage?: string;
+  canonicalUrl?: string;
+  articleData?: {
+    publishedTime?: string;
+    modifiedTime?: string;
+    author?: string;
+    tags?: string[];
+  };
+}
+
+const { 
+  title, 
+  description = 'Googleスプレッドシートで管理する爆速ウェブメディア',
+  ogImage = '/og-image.png',
+  canonicalUrl,
+  articleData
+} = Astro.props;
+
+const siteTitle = 'SpreadMedia';
+const fullTitle = title === siteTitle ? title : `${title} | ${siteTitle}`;
+const currentUrl = canonicalUrl || Astro.url.href;
+---
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="generator" content={Astro.generator} />
+  
+  <!-- 基本的なSEOタグ -->
+  <title>{fullTitle}</title>
+  <meta name="description" content={description} />
+  <link rel="canonical" href={currentUrl} />
+  
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content={articleData ? 'article' : 'website'} />
+  <meta property="og:url" content={currentUrl} />
+  <meta property="og:title" content={fullTitle} />
+  <meta property="og:description" content={description} />
+  <meta property="og:image" content={ogImage} />
+  <meta property="og:site_name" content={siteTitle} />
+  <meta property="og:locale" content="ja_JP" />
+  
+  {articleData?.publishedTime && (
+    <meta property="article:published_time" content={articleData.publishedTime} />
+  )}
+  {articleData?.modifiedTime && (
+    <meta property="article:modified_time" content={articleData.modifiedTime} />
+  )}
+  {articleData?.author && (
+    <meta property="article:author" content={articleData.author} />
+  )}
+  {articleData?.tags?.map(tag => (
+    <meta property="article:tag" content={tag} />
+  ))}
+  
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:url" content={currentUrl} />
+  <meta name="twitter:title" content={fullTitle} />
+  <meta name="twitter:description" content={description} />
+  <meta name="twitter:image" content={ogImage} />
+  
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  
+  <!-- Preconnect to external domains -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  
+  <!-- Google Fonts - Noto Sans JP -->
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet" />
+  
+  <style>
+    body {
+      font-family: 'Noto Sans JP', sans-serif;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+  <header class="bg-white shadow-sm sticky top-0 z-50">
+    <nav class="max-w-6xl mx-auto px-4 py-4">
+      <div class="flex items-center justify-between">
+        <a href="/" class="text-2xl font-bold text-gray-900 hover:text-blue-600 transition-colors">
+          SpreadMedia
+        </a>
+        <div class="flex items-center gap-6">
+          <a href="/" class="text-gray-600 hover:text-gray-900">ホーム</a>
+          <a href="/categories" class="text-gray-600 hover:text-gray-900">カテゴリ</a>
+          <a href="/tags" class="text-gray-600 hover:text-gray-900">タグ</a>
+        </div>
+      </div>
+    </nav>
+  </header>
+  
+  <main class="flex-grow">
+    <slot />
+  </main>
+  
+  <footer class="bg-gray-900 text-gray-400 py-12 mt-16">
+    <div class="max-w-6xl mx-auto px-4">
+      <div class="grid md:grid-cols-3 gap-8">
+        <div>
+          <h3 class="text-white text-lg font-bold mb-4">SpreadMedia</h3>
+          <p class="text-sm">
+            Googleスプレッドシートで管理する爆速ウェブメディア。
+            静的サイト生成で高速なパフォーマンスを実現。
+          </p>
+        </div>
+        <div>
+          <h4 class="text-white font-medium mb-4">リンク</h4>
+          <ul class="space-y-2 text-sm">
+            <li><a href="/" class="hover:text-white transition-colors">ホーム</a></li>
+            <li><a href="/categories" class="hover:text-white transition-colors">カテゴリ</a></li>
+            <li><a href="/tags" class="hover:text-white transition-colors">タグ</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="text-white font-medium mb-4">技術スタック</h4>
+          <ul class="space-y-2 text-sm">
+            <li>Astro</li>
+            <li>Tailwind CSS</li>
+            <li>Google Sheets API</li>
+          </ul>
+        </div>
+      </div>
+      <div class="border-t border-gray-800 mt-8 pt-8 text-center text-sm">
+        <p>&copy; 2025 SpreadMedia. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>

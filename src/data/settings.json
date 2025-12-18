@@ -1,0 +1,22 @@
+[
+  {
+    "key": "site_title",
+    "value": "SpreadMedia"
+  },
+  {
+    "key": "site_description",
+    "value": "Googleスプレッドシートで管理する爆速ウェブメディア"
+  },
+  {
+    "key": "site_url",
+    "value": "https://spreadmedia.example.com"
+  },
+  {
+    "key": "og_image",
+    "value": "/og-image.png"
+  },
+  {
+    "key": "twitter_handle",
+    "value": "@spreadmedia"
+  }
+]

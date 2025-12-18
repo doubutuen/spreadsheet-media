@@ -1,0 +1,42 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getCategories, getPublishedArticles } from '../../lib/spreadsheet';
+
+const categories = await getCategories();
+const articles = await getPublishedArticles();
+
+// 各カテゴリの記事数をカウント
+const categoryArticleCounts = new Map<number, number>();
+articles.forEach(article => {
+  const count = categoryArticleCounts.get(article.categoryId) || 0;
+  categoryArticleCounts.set(article.categoryId, count + 1);
+});
+---
+
+<BaseLayout 
+  title="カテゴリ一覧"
+  description="SpreadMediaの全カテゴリ一覧です。技術解説、SEO・マーケティング、ニュースなど様々なカテゴリの記事をご覧いただけます。"
+>
+  <div class="max-w-6xl mx-auto px-4 py-12">
+    <h1 class="text-3xl font-bold text-gray-900 mb-8">カテゴリ一覧</h1>
+    
+    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {categories.map((category) => {
+        const articleCount = categoryArticleCounts.get(category.id) || 0;
+        return (
+          <a 
+            href={`/categories/${category.slug}`}
+            class="card group"
+          >
+            <h2 class="text-xl font-bold text-gray-900 group-hover:text-blue-600 transition-colors mb-2">
+              {category.name}
+            </h2>
+            <p class="text-gray-500 text-sm">
+              {articleCount}件の記事
+            </p>
+          </a>
+        );
+      })}
+    </div>
+  </div>
+</BaseLayout>

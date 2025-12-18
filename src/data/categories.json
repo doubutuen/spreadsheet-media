@@ -1,0 +1,17 @@
+[
+  {
+    "id": 1,
+    "name": "技術解説",
+    "slug": "tech"
+  },
+  {
+    "id": 2,
+    "name": "SEO・マーケティング",
+    "slug": "seo-marketing"
+  },
+  {
+    "id": 3,
+    "name": "ニュース",
+    "slug": "news"
+  }
+]

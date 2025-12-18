@@ -1,0 +1,32 @@
+[
+  {
+    "id": 1,
+    "name": "Astro",
+    "slug": "astro"
+  },
+  {
+    "id": 2,
+    "name": "フロントエンド",
+    "slug": "frontend"
+  },
+  {
+    "id": 3,
+    "name": "SEO",
+    "slug": "seo"
+  },
+  {
+    "id": 4,
+    "name": "マーケティング",
+    "slug": "marketing"
+  },
+  {
+    "id": 5,
+    "name": "Google",
+    "slug": "google"
+  },
+  {
+    "id": 6,
+    "name": "CSS",
+    "slug": "css"
+  }
+]

@@ -1,0 +1,118 @@
+---
+/**
+ * インタビュー記事コンポーネント
+ * インタビュー形式のコンテンツをパースして表示
+ * 
+ * Markdownでの記述形式:
+ * [speaker:interviewer]
+ * 質問内容をここに書きます。
+ * 
+ * [speaker:A]
+ * 回答内容をここに書きます。
+ * 複数行も対応しています。
+ */
+import type { Interviewee } from '../types';
+import InterviewBlock from './InterviewBlock.astro';
+
+interface Props {
+  content: string;
+  interviewees: Interviewee[];
+}
+
+const { content, interviewees } = Astro.props;
+
+// インタビュー対象者をMapに変換
+const speakerMap = new Map(interviewees.map(i => [i.id, i]));
+
+// インタビューコンテンツをパース
+interface ParsedBlock {
+  type: 'interview' | 'text';
+  speakerId?: string;
+  content: string;
+}
+
+function parseInterviewContent(content: string): ParsedBlock[] {
+  const blocks: ParsedBlock[] = [];
+  const lines = content.split('\n');
+  
+  let currentBlock: ParsedBlock | null = null;
+  let currentContent: string[] = [];
+  
+  for (const line of lines) {
+    // [speaker:ID] パターンをチェック
+    const speakerMatch = line.match(/^\[speaker:(\w+)\]\s*$/);
+    
+    if (speakerMatch) {
+      // 前のブロックを保存
+      if (currentBlock) {
+        currentBlock.content = currentContent.join('\n').trim();
+        if (currentBlock.content) {
+          blocks.push(currentBlock);
+        }
+      }
+      
+      // 新しいインタビューブロックを開始
+      currentBlock = {
+        type: 'interview',
+        speakerId: speakerMatch[1],
+        content: ''
+      };
+      currentContent = [];
+    } else {
+      currentContent.push(line);
+    }
+  }
+  
+  // 最後のブロックを保存
+  if (currentBlock) {
+    currentBlock.content = currentContent.join('\n').trim();
+    if (currentBlock.content) {
+      blocks.push(currentBlock);
+    }
+  } else if (currentContent.length > 0) {
+    // speaker指定がない場合はテキストブロックとして扱う
+    const textContent = currentContent.join('\n').trim();
+    if (textContent) {
+      blocks.push({
+        type: 'text',
+        content: textContent
+      });
+    }
+  }
+  
+  return blocks;
+}
+
+const parsedBlocks = parseInterviewContent(content);
+---
+
+<div class="interview-article">
+  {parsedBlocks.map((block) => {
+    if (block.type === 'interview' && block.speakerId) {
+      const speaker = speakerMap.get(block.speakerId);
+      if (speaker) {
+        const isInterviewer = block.speakerId === 'interviewer' || block.speakerId === 'Q';
+        return (
+          <InterviewBlock 
+            speaker={speaker} 
+            content={block.content}
+            isInterviewer={isInterviewer}
+          />
+        );
+      }
+    }
+    
+    // テキストブロックまたは話者が見つからない場合
+    return (
+      <div class="prose prose-lg max-w-none my-6" set:html={block.content.replace(/\n/g, '<br>')} />
+    );
+  })}
+</div>
+
+<style>
+  .interview-article {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+</style>

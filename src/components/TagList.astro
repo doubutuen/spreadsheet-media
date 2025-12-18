@@ -1,0 +1,26 @@
+---
+import type { Tag } from '../types';
+
+interface Props {
+  tags: Tag[];
+  size?: 'sm' | 'md';
+}
+
+const { tags, size = 'md' } = Astro.props;
+
+const sizeClasses = {
+  sm: 'text-xs px-2 py-0.5',
+  md: 'text-sm px-3 py-1'
+};
+---
+
+<div class="flex flex-wrap gap-2">
+  {tags.map((tag) => (
+    <a 
+      href={`/tags/${tag.slug}`}
+      class={`tag ${sizeClasses[size]}`}
+    >
+      #{tag.name}
+    </a>
+  ))}
+</div>
