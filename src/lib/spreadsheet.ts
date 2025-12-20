@@ -3,50 +3,11 @@ import type { Article, Category, Tag, Author, SpreadsheetData, Interviewee } fro
 /**
  * Google スプレッドシートからデータを取得するクラス
  * 
- * 本番環境では Google Sheets API を使用しますが、
- * デモ・開発環境ではローカルのJSONデータを使用します。
+ * GAS（Google Apps Script）をウェブアプリとしてデプロイし、
+ * そのURLを環境変数 GAS_API_URL に設定することで連携します。
  * 
- * Google Sheets API を使用する場合の設定:
- * 1. Google Cloud Console でプロジェクトを作成
- * 2. Google Sheets API を有効化
- * 3. サービスアカウントを作成し、JSONキーをダウンロード
- * 4. スプレッドシートをサービスアカウントに共有
- * 5. 環境変数に GOOGLE_SHEETS_ID と GOOGLE_SERVICE_ACCOUNT_KEY を設定
+ * 環境変数が設定されていない場合は、ローカルのJSONデータを使用します。
  */
-
-// スプレッドシートの公開URLからCSVを取得する関数
-async function fetchPublicSheetAsCSV(sheetId: string, gid: string): Promise<string> {
-  const url = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}`;
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`Failed to fetch sheet: ${response.statusText}`);
-  }
-  return response.text();
-}
-
-// CSVをパースする関数
-function parseCSV(csv: string): string[][] {
-  const lines = csv.split('\n');
-  return lines.map(line => {
-    const result: string[] = [];
-    let current = '';
-    let inQuotes = false;
-    
-    for (let i = 0; i < line.length; i++) {
-      const char = line[i];
-      if (char === '"') {
-        inQuotes = !inQuotes;
-      } else if (char === ',' && !inQuotes) {
-        result.push(current.trim());
-        current = '';
-      } else {
-        current += char;
-      }
-    }
-    result.push(current.trim());
-    return result;
-  }).filter(row => row.some(cell => cell !== ''));
-}
 
 // ローカルのサンプルデータを読み込む
 import articlesData from '../data/articles.json';
@@ -55,34 +16,127 @@ import tagsData from '../data/tags.json';
 import authorsData from '../data/authors.json';
 import settingsData from '../data/settings.json';
 
+// GAS APIのレスポンス型
+interface GASResponse {
+  articles?: any[];
+  categories?: any[];
+  tags?: any[];
+  authors?: any[];
+  settings?: any[];
+  error?: string;
+}
+
+/**
+ * GAS APIからデータを取得
+ */
+async function fetchFromGAS(): Promise<GASResponse> {
+  const gasApiUrl = import.meta.env.GAS_API_URL;
+  
+  if (!gasApiUrl) {
+    throw new Error('GAS_API_URL is not set');
+  }
+  
+  const url = `${gasApiUrl}?action=all`;
+  
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: {
+      'Accept': 'application/json',
+    },
+  });
+  
+  if (!response.ok) {
+    throw new Error(`Failed to fetch from GAS: ${response.statusText}`);
+  }
+  
+  const data = await response.json();
+  
+  if (data.error) {
+    throw new Error(`GAS API error: ${data.error}`);
+  }
+  
+  return data;
+}
+
 /**
  * スプレッドシートから全データを取得
  * 環境変数が設定されていない場合はローカルのサンプルデータを使用
  */
 export async function getSpreadsheetData(): Promise<SpreadsheetData> {
-  const sheetId = import.meta.env.GOOGLE_SHEETS_ID;
+  const gasApiUrl = import.meta.env.GAS_API_URL;
   
   // 環境変数が設定されていない場合はローカルデータを使用
-  if (!sheetId) {
+  if (!gasApiUrl) {
+    console.log('GAS_API_URL not set, using local data');
     return getLocalData();
   }
   
-  // Google スプレッドシートからデータを取得
-  // 各シートのgidは実際のスプレッドシートに合わせて設定してください
+  // GAS APIからデータを取得
   try {
-    // 実際のGoogle Sheets API連携はここに実装
-    // 現在はローカルデータにフォールバック
-    return getLocalData();
+    console.log('Fetching data from GAS API...');
+    const gasData = await fetchFromGAS();
+    return parseGASData(gasData);
   } catch (error) {
-    console.error('Failed to fetch from Google Sheets, using local data:', error);
+    console.error('Failed to fetch from GAS API, using local data:', error);
     return getLocalData();
   }
 }
 
 /**
+ * GAS APIのレスポンスをSpreadsheetData形式に変換
+ */
+function parseGASData(gasData: GASResponse): SpreadsheetData {
+  const articles: Article[] = (gasData.articles || []).map(a => ({
+    id: Number(a.id),
+    title: a.title || '',
+    slug: a.slug || '',
+    content: a.content || '',
+    categoryId: Number(a.category_id),
+    authorId: Number(a.author_id),
+    tags: a.tags ? String(a.tags).split(',').map((t: string) => parseInt(t.trim())).filter(n => !isNaN(n)) : [],
+    status: a.status || 'draft',
+    publishedAt: a.published_at || '',
+    relatedArticleIds: a.related_article_ids ? String(a.related_article_ids).split(',').map((id: string) => parseInt(id.trim())).filter(n => !isNaN(n)) : [],
+    metaDescription: a.meta_description || '',
+    thumbnail: a.thumbnail || undefined,
+    images: parseImages(a.images),
+    articleType: a.article_type || 'standard',
+    interviewees: parseInterviewees(a.interviewees)
+  }));
+
+  const categories: Category[] = (gasData.categories || []).map(c => ({
+    id: Number(c.id),
+    name: c.name || '',
+    slug: c.slug || ''
+  }));
+
+  const tags: Tag[] = (gasData.tags || []).map(t => ({
+    id: Number(t.id),
+    name: t.name || '',
+    slug: t.slug || ''
+  }));
+
+  const authors: Author[] = (gasData.authors || []).map(a => ({
+    id: Number(a.id),
+    name: a.name || '',
+    profile: a.profile || '',
+    avatar: a.avatar || undefined
+  }));
+
+  const settings = new Map<string, string>();
+  (gasData.settings || []).forEach(s => {
+    if (s.key) {
+      settings.set(s.key, s.value || '');
+    }
+  });
+
+  return { articles, categories, tags, authors, settings };
+}
+
+/**
  * インタビュー対象者のJSONをパース
  */
-function parseInterviewees(intervieweesStr: string | undefined): Interviewee[] | undefined {
+function parseInterviewees(intervieweesStr: string | undefined | null): Interviewee[] | undefined {
   if (!intervieweesStr) return undefined;
   try {
     return JSON.parse(intervieweesStr);
@@ -94,13 +148,13 @@ function parseInterviewees(intervieweesStr: string | undefined): Interviewee[] |
 /**
  * 画像配列のJSONをパース
  */
-function parseImages(imagesStr: string | undefined): string[] | undefined {
+function parseImages(imagesStr: string | undefined | null): string[] | undefined {
   if (!imagesStr) return undefined;
   try {
     return JSON.parse(imagesStr);
   } catch {
     // カンマ区切りの場合
-    return imagesStr.split(',').map(s => s.trim()).filter(s => s);
+    return String(imagesStr).split(',').map(s => s.trim()).filter(s => s);
   }
 }
 
