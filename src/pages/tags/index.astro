@@ -1,9 +1,12 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import { getTags, getPublishedArticles } from '../../lib/spreadsheet';
+import { getTags, getPublishedArticles, getSiteSettings } from '../../lib/spreadsheet';
 
 const tags = await getTags();
 const articles = await getPublishedArticles();
+const settings = await getSiteSettings();
+
+const siteTitle = settings.get('site_title') || 'My Media';
 
 // 各タグの記事数をカウント
 const tagArticleCounts = new Map<number, number>();
@@ -24,7 +27,7 @@ const sortedTags = [...tags].sort((a, b) => {
 
 <BaseLayout 
   title="タグ一覧"
-  description="SpreadMediaの全タグ一覧です。興味のあるトピックからお探しの記事を見つけてください。"
+  description={`${siteTitle}の全タグ一覧です。興味のあるトピックからお探しの記事を見つけてください。`}
 >
   <div class="max-w-6xl mx-auto px-4 py-12">
     <h1 class="text-3xl font-bold text-gray-900 mb-8">タグ一覧</h1>

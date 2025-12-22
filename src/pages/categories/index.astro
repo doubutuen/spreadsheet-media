@@ -1,9 +1,12 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import { getCategories, getPublishedArticles } from '../../lib/spreadsheet';
+import { getCategories, getPublishedArticles, getSiteSettings } from '../../lib/spreadsheet';
 
 const categories = await getCategories();
 const articles = await getPublishedArticles();
+const settings = await getSiteSettings();
+
+const siteTitle = settings.get('site_title') || 'My Media';
 
 // 各カテゴリの記事数をカウント
 const categoryArticleCounts = new Map<number, number>();
@@ -15,7 +18,7 @@ articles.forEach(article => {
 
 <BaseLayout 
   title="カテゴリ一覧"
-  description="SpreadMediaの全カテゴリ一覧です。技術解説、SEO・マーケティング、ニュースなど様々なカテゴリの記事をご覧いただけます。"
+  description={`${siteTitle}の全カテゴリ一覧です。様々なカテゴリの記事をご覧いただけます。`}
 >
   <div class="max-w-6xl mx-auto px-4 py-12">
     <h1 class="text-3xl font-bold text-gray-900 mb-8">カテゴリ一覧</h1>

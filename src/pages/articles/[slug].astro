@@ -9,7 +9,8 @@ import {
   getRelatedArticles,
   getCategoryById,
   getAuthorById,
-  getTags
+  getTags,
+  getSiteSettings
 } from '../../lib/spreadsheet';
 import { parseMarkdown } from '../../lib/markdown';
 import type { Article, Category, Author, Tag } from '../../types';
@@ -35,6 +36,10 @@ const author = await getAuthorById(article.authorId);
 const allTags = await getTags();
 const articleTags = allTags.filter(tag => article.tags.includes(tag.id));
 const relatedArticles = await getRelatedArticles(article.id);
+
+// サイト設定を取得
+const settings = await getSiteSettings();
+const siteTitle = settings.get('site_title') || 'My Media';
 
 // インタビュー記事かどうか
 const isInterview = article.articleType === 'interview';
@@ -66,7 +71,7 @@ const jsonLd = {
   },
   "publisher": {
     "@type": "Organization",
-    "name": "SpreadMedia"
+    "name": siteTitle
   }
 };
 

@@ -1,8 +1,19 @@
 ---
 import '../styles/global.css';
+import { getSiteSettings } from '../lib/spreadsheet';
+
+// スプレッドシートからサイト設定を取得
+const settings = await getSiteSettings();
+const siteTitle = settings.get('site_title') || 'My Media';
+const siteDescription = settings.get('site_description') || 'ウェブメディア';
+const siteUrl = settings.get('site_url') || '';
+const defaultOgImage = settings.get('og_image') || '/og-image.png';
+const twitterHandle = settings.get('twitter_handle') || '';
+const copyrightYear = settings.get('copyright_year') || new Date().getFullYear().toString();
+const copyrightName = settings.get('copyright_name') || siteTitle;
 
 interface Props {
-  title: string;
+  title?: string;
   description?: string;
   ogImage?: string;
   canonicalUrl?: string;
@@ -16,14 +27,13 @@ interface Props {
 
 const { 
   title, 
-  description = 'Googleスプレッドシートで管理する爆速ウェブメディア',
-  ogImage = '/og-image.png',
+  description = siteDescription,
+  ogImage = defaultOgImage,
   canonicalUrl,
   articleData
 } = Astro.props;
 
-const siteTitle = 'SpreadMedia';
-const fullTitle = title === siteTitle ? title : `${title} | ${siteTitle}`;
+const fullTitle = title ? `${title} | ${siteTitle}` : siteTitle;
 const currentUrl = canonicalUrl || Astro.url.href;
 ---
 
@@ -67,6 +77,9 @@ const currentUrl = canonicalUrl || Astro.url.href;
   <meta name="twitter:title" content={fullTitle} />
   <meta name="twitter:description" content={description} />
   <meta name="twitter:image" content={ogImage} />
+  {twitterHandle && (
+    <meta name="twitter:site" content={twitterHandle} />
+  )}
   
   <!-- Favicon -->
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
@@ -89,7 +102,7 @@ const currentUrl = canonicalUrl || Astro.url.href;
     <nav class="max-w-6xl mx-auto px-4 py-4">
       <div class="flex items-center justify-between">
         <a href="/" class="text-2xl font-bold text-gray-900 hover:text-blue-600 transition-colors">
-          SpreadMedia
+          {siteTitle}
         </a>
         <div class="flex items-center gap-6">
           <a href="/" class="text-gray-600 hover:text-gray-900">ホーム</a>
@@ -108,10 +121,9 @@ const currentUrl = canonicalUrl || Astro.url.href;
     <div class="max-w-6xl mx-auto px-4">
       <div class="grid md:grid-cols-3 gap-8">
         <div>
-          <h3 class="text-white text-lg font-bold mb-4">SpreadMedia</h3>
+          <h3 class="text-white text-lg font-bold mb-4">{siteTitle}</h3>
           <p class="text-sm">
-            Googleスプレッドシートで管理する爆速ウェブメディア。
-            静的サイト生成で高速なパフォーマンスを実現。
+            {siteDescription}
           </p>
         </div>
         <div>
@@ -132,7 +144,7 @@ const currentUrl = canonicalUrl || Astro.url.href;
         </div>
       </div>
       <div class="border-t border-gray-800 mt-8 pt-8 text-center text-sm">
-        <p>&copy; 2025 SpreadMedia. All rights reserved.</p>
+        <p>&copy; {copyrightYear} {copyrightName}. All rights reserved.</p>
       </div>
     </div>
   </footer>

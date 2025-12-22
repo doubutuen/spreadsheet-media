@@ -1,38 +1,45 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import ArticleCard from '../components/ArticleCard.astro';
-import { getPublishedArticles, getCategories, getAuthors } from '../lib/spreadsheet';
+import { getPublishedArticles, getCategories, getAuthors, getSiteSettings } from '../lib/spreadsheet';
 
 // スプレッドシートからデータを取得
 const articles = await getPublishedArticles();
 const categories = await getCategories();
 const authors = await getAuthors();
+const settings = await getSiteSettings();
+
+// サイト設定を取得
+const siteTitle = settings.get('site_title') || 'My Media';
+const siteDescription = settings.get('site_description') || 'ウェブメディア';
+const heroTagline1 = settings.get('hero_tagline_1') || '静的サイト生成で高速表示';
+const heroTagline2 = settings.get('hero_tagline_2') || 'スプレッドシートでCMS管理';
+const heroTagline3 = settings.get('hero_tagline_3') || 'SEO最適化済み';
 
 // カテゴリと著者のマップを作成
 const categoryMap = new Map(categories.map(c => [c.id, c]));
 const authorMap = new Map(authors.map(a => [a.id, a]));
 ---
 
-<BaseLayout title="SpreadMedia">
+<BaseLayout>
   <!-- ヒーローセクション -->
   <section class="bg-gradient-to-br from-blue-600 to-indigo-700 text-white py-20">
     <div class="max-w-6xl mx-auto px-4 text-center">
       <h1 class="text-4xl md:text-5xl font-bold mb-6">
-        SpreadMedia
+        {siteTitle}
       </h1>
       <p class="text-xl md:text-2xl text-blue-100 mb-8 max-w-2xl mx-auto">
-        Googleスプレッドシートで管理する<br class="md:hidden" />
-        爆速ウェブメディア
+        {siteDescription}
       </p>
       <div class="flex flex-wrap justify-center gap-4 text-sm">
         <div class="bg-white/10 backdrop-blur rounded-lg px-4 py-2">
-          ⚡ 静的サイト生成で高速表示
+          ⚡ {heroTagline1}
         </div>
         <div class="bg-white/10 backdrop-blur rounded-lg px-4 py-2">
-          📊 スプレッドシートでCMS管理
+          📊 {heroTagline2}
         </div>
         <div class="bg-white/10 backdrop-blur rounded-lg px-4 py-2">
-          🔍 SEO最適化済み
+          🔍 {heroTagline3}
         </div>
       </div>
     </div>
@@ -53,50 +60,6 @@ const authorMap = new Map(authors.map(a => [a.id, a]));
           author={authorMap.get(article.authorId)}
         />
       ))}
-    </div>
-  </section>
-
-  <!-- 特徴セクション -->
-  <section class="bg-white py-16">
-    <div class="max-w-6xl mx-auto px-4">
-      <h2 class="text-3xl font-bold text-gray-900 text-center mb-12">
-        このメディアの特徴
-      </h2>
-      
-      <div class="grid md:grid-cols-3 gap-8">
-        <div class="text-center">
-          <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <span class="text-3xl">📊</span>
-          </div>
-          <h3 class="text-xl font-bold mb-2">スプレッドシートでCMS</h3>
-          <p class="text-gray-600">
-            使い慣れたGoogleスプレッドシートで記事を管理。
-            非エンジニアでも簡単にコンテンツ更新が可能です。
-          </p>
-        </div>
-        
-        <div class="text-center">
-          <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <span class="text-3xl">⚡</span>
-          </div>
-          <h3 class="text-xl font-bold mb-2">爆速パフォーマンス</h3>
-          <p class="text-gray-600">
-            Astroによる静的サイト生成で、
-            Core Web Vitalsの基準をクリアする高速表示を実現。
-          </p>
-        </div>
-        
-        <div class="text-center">
-          <div class="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <span class="text-3xl">🔍</span>
-          </div>
-          <h3 class="text-xl font-bold mb-2">SEO最適化</h3>
-          <p class="text-gray-600">
-            構造化データ、サイトマップ、メタタグを自動生成。
-            検索エンジンからの流入を最大化します。
-          </p>
-        </div>
-      </div>
     </div>
   </section>
 </BaseLayout>

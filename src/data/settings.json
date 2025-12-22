@@ -18,5 +18,25 @@
   {
     "key": "twitter_handle",
     "value": "@spreadmedia"
+  },
+  {
+    "key": "hero_tagline_1",
+    "value": "静的サイト生成で高速表示"
+  },
+  {
+    "key": "hero_tagline_2",
+    "value": "スプレッドシートでCMS管理"
+  },
+  {
+    "key": "hero_tagline_3",
+    "value": "SEO最適化済み"
+  },
+  {
+    "key": "copyright_year",
+    "value": "2025"
+  },
+  {
+    "key": "copyright_name",
+    "value": "SpreadMedia"
   }
 ]
