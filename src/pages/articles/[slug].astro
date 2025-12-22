@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import ArticleTracker from '../../components/ArticleTracker.astro';
 import RelatedArticles from '../../components/RelatedArticles.astro';
 import TagList from '../../components/TagList.astro';
 import InterviewArticle from '../../components/InterviewArticle.astro';
@@ -89,6 +90,9 @@ const articleTypeLabel = isInterview ? 'インタビュー' : null;
     tags: articleTags.map(t => t.name)
   }}
 >
+  <!-- 閲覧履歴トラッカー -->
+  <ArticleTracker article={article} />
+
   <!-- 構造化データ -->
   <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
 

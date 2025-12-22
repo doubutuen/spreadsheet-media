@@ -1,0 +1,81 @@
+---
+/**
+ * 記事閲覧トラッカー
+ * 記事ページに配置して閲覧履歴をlocalStorageに記録する
+ */
+import type { Article } from '../types';
+
+interface Props {
+  article: Article;
+}
+
+const { article } = Astro.props;
+
+const articleData = JSON.stringify({
+  id: article.id,
+  slug: article.slug,
+  categoryId: article.categoryId,
+  tags: article.tags
+});
+---
+
+<div id="article-tracker" data-article={articleData} style="display: none;"></div>
+
+<script>
+  const STORAGE_KEY = 'spreadmedia_reading_history';
+  const MAX_HISTORY_SIZE = 50;
+
+  interface HistoryEntry {
+    articleId: number;
+    slug: string;
+    categoryId: number;
+    tags: number[];
+    viewedAt: number;
+  }
+
+  function getReadingHistory(): HistoryEntry[] {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (!stored) return [];
+      return JSON.parse(stored);
+    } catch {
+      return [];
+    }
+  }
+
+  function addToHistory(article: { id: number; slug: string; categoryId: number; tags: number[] }): void {
+    try {
+      const history = getReadingHistory();
+      
+      // 既存のエントリを削除（同じ記事の重複を防ぐ）
+      const filtered = history.filter(h => h.articleId !== article.id);
+      
+      // 新しいエントリを先頭に追加
+      const newEntry: HistoryEntry = {
+        articleId: article.id,
+        slug: article.slug,
+        categoryId: article.categoryId,
+        tags: article.tags || [],
+        viewedAt: Date.now()
+      };
+      
+      filtered.unshift(newEntry);
+      
+      // 最大サイズを超えたら古いものを削除
+      const trimmed = filtered.slice(0, MAX_HISTORY_SIZE);
+      
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(trimmed));
+    } catch {
+      // localStorageが使えない場合は何もしない
+    }
+  }
+
+  // 記事データを取得して履歴に追加
+  const tracker = document.getElementById('article-tracker');
+  if (tracker) {
+    const articleData = JSON.parse(tracker.dataset.article || '{}');
+    if (articleData.id) {
+      addToHistory(articleData);
+    }
+  }
+</script>

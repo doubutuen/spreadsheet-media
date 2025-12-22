@@ -1,0 +1,304 @@
+---
+/**
+ * おすすめ記事セクション
+ * 
+ * - 初回訪問時: 人気記事（最新3件）を表示
+ * - 再訪問時: 閲覧履歴に基づいたおすすめ記事を表示
+ * - JavaScript処理完了後にふわっとアニメーションで表示
+ */
+import type { Article, Category, Author } from '../types';
+
+interface Props {
+  articles: Article[];
+  categories: Category[];
+  authors: Author[];
+}
+
+const { articles, categories, authors } = Astro.props;
+
+// カテゴリと著者のマップを作成
+const categoryMap = new Map(categories.map(c => [c.id, c]));
+const authorMap = new Map(authors.map(a => [a.id, a]));
+
+// 人気記事（フォールバック用）- 最新3件を使用
+const popularArticles = articles.slice(0, 3);
+
+// 日付をフォーマット
+const formatDate = (dateString: string) => {
+  const date = new Date(dateString);
+  return date.toLocaleDateString('ja-JP', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+};
+
+// 記事の要約を生成
+const getExcerpt = (content: string) => {
+  return content
+    .replace(/^\[speaker:\w+\]\s*$/gm, '')
+    .replace(/^#+\s+.+$/gm, '')
+    .replace(/\*\*/g, '')
+    .replace(/!\[.*?\]\(.*?\)/g, '')
+    .replace(/\n+/g, ' ')
+    .trim()
+    .slice(0, 100) + '...';
+};
+
+// 全記事データをJSONとして埋め込む（クライアントサイドで使用）
+const articlesJson = JSON.stringify(articles.map(a => ({
+  id: a.id,
+  slug: a.slug,
+  title: a.title,
+  categoryId: a.categoryId,
+  authorId: a.authorId,
+  tags: a.tags,
+  thumbnail: a.thumbnail,
+  content: a.content,
+  publishedAt: a.publishedAt,
+  articleType: a.articleType
+})));
+
+const categoriesJson = JSON.stringify(categories);
+const authorsJson = JSON.stringify(authors);
+---
+
+<!-- おすすめ記事セクション（初期状態は非表示、JSで表示） -->
+<section 
+  id="recommended-section" 
+  class="max-w-6xl mx-auto px-4 pt-16 pb-0 opacity-0 max-h-0 overflow-hidden transition-all duration-500 ease-out"
+  data-articles={articlesJson}
+  data-categories={categoriesJson}
+  data-authors={authorsJson}
+>
+  <div class="flex items-center justify-between mb-8">
+    <h2 class="text-3xl font-bold text-gray-900">
+      <span id="recommended-title">人気の記事</span>
+    </h2>
+    <span id="recommended-badge" class="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full hidden">
+      あなたの閲覧履歴に基づく
+    </span>
+  </div>
+  
+  <div id="recommended-articles" class="grid md:grid-cols-3 gap-6">
+    {/* 初期表示用の人気記事（JSで置き換えられる可能性あり） */}
+    {popularArticles.map((article) => {
+      const category = categoryMap.get(article.categoryId);
+      const author = authorMap.get(article.authorId);
+      const articleTypeLabel = article.articleType === 'interview' ? 'インタビュー' : null;
+      
+      return (
+        <article class="card group overflow-hidden" data-article-slug={article.slug}>
+          <a href={`/articles/${article.slug}`} class="block">
+            {article.thumbnail && (
+              <div class="relative aspect-video overflow-hidden -mx-6 -mt-6 mb-4">
+                <img 
+                  src={article.thumbnail} 
+                  alt={article.title}
+                  class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  loading="lazy"
+                />
+                {articleTypeLabel && (
+                  <span class="absolute top-3 left-3 bg-indigo-600 text-white text-xs font-bold px-2 py-1 rounded">
+                    {articleTypeLabel}
+                  </span>
+                )}
+              </div>
+            )}
+            
+            <div class="flex flex-col h-full">
+              <div class="mb-3 flex items-center gap-2">
+                {category && (
+                  <span class="category-badge">{category.name}</span>
+                )}
+              </div>
+              
+              <h3 class="text-lg font-bold text-gray-900 group-hover:text-blue-600 transition-colors mb-3 line-clamp-2">
+                {article.title}
+              </h3>
+              
+              <p class="text-gray-600 text-sm leading-relaxed mb-4 flex-grow line-clamp-2">
+                {getExcerpt(article.content)}
+              </p>
+              
+              <div class="flex items-center justify-between text-sm text-gray-500 pt-4 border-t border-gray-100">
+                <time datetime={article.publishedAt}>
+                  {formatDate(article.publishedAt)}
+                </time>
+                <span class="text-blue-600 group-hover:translate-x-1 transition-transform">
+                  読む →
+                </span>
+              </div>
+            </div>
+          </a>
+        </article>
+      );
+    })}
+  </div>
+</section>
+
+<script>
+  // 閲覧履歴管理
+  const STORAGE_KEY = 'spreadmedia_reading_history';
+  const MAX_HISTORY_SIZE = 50;
+
+  interface HistoryEntry {
+    articleId: number;
+    slug: string;
+    categoryId: number;
+    tags: number[];
+    viewedAt: number;
+  }
+
+  function getReadingHistory(): HistoryEntry[] {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (!stored) return [];
+      return JSON.parse(stored);
+    } catch {
+      return [];
+    }
+  }
+
+  function initRecommendedSection() {
+    const section = document.getElementById('recommended-section');
+    const titleEl = document.getElementById('recommended-title');
+    const badgeEl = document.getElementById('recommended-badge');
+    const articlesContainer = document.getElementById('recommended-articles');
+    
+    if (!section || !titleEl || !badgeEl || !articlesContainer) return;
+
+    const history = getReadingHistory();
+    const viewedSlugs = new Set(history.map(h => h.slug));
+    
+    // 記事データを取得
+    const articlesData = JSON.parse(section.dataset.articles || '[]');
+    const categoriesData = JSON.parse(section.dataset.categories || '[]');
+    const authorsData = JSON.parse(section.dataset.authors || '[]');
+    
+    const categoryMap = new Map(categoriesData.map((c: any) => [c.id, c]));
+    const authorMap = new Map(authorsData.map((a: any) => [a.id, a]));
+
+    if (history.length > 0) {
+      // 閲覧履歴がある場合: パーソナライズされたおすすめを表示
+      titleEl.textContent = 'あなたへのおすすめ';
+      badgeEl.classList.remove('hidden');
+      
+      // カテゴリの出現回数をカウント
+      const categoryCount = new Map<number, number>();
+      history.forEach(entry => {
+        categoryCount.set(entry.categoryId, (categoryCount.get(entry.categoryId) || 0) + 1);
+      });
+      
+      // 未読記事をスコアリング
+      const unreadArticles = articlesData.filter((a: any) => !viewedSlugs.has(a.slug));
+      
+      const scoredArticles = unreadArticles.map((article: any) => {
+        let score = 0;
+        // 同じカテゴリの記事にスコアを加算
+        score += (categoryCount.get(article.categoryId) || 0) * 10;
+        // 新しい記事にボーナス
+        const daysSincePublished = (Date.now() - new Date(article.publishedAt).getTime()) / (1000 * 60 * 60 * 24);
+        if (daysSincePublished < 7) score += 5;
+        return { ...article, score };
+      });
+      
+      // スコア順にソート
+      scoredArticles.sort((a: any, b: any) => b.score - a.score);
+      
+      // 上位3件を取得（未読がない場合は人気記事のまま）
+      const recommendedArticles = scoredArticles.slice(0, 3);
+      
+      if (recommendedArticles.length > 0) {
+        // 記事カードを再生成
+        articlesContainer.innerHTML = recommendedArticles.map((article: any) => {
+          const category = categoryMap.get(article.categoryId);
+          const articleTypeLabel = article.articleType === 'interview' ? 'インタビュー' : null;
+          const excerpt = article.content
+            .replace(/^\[speaker:\w+\]\s*$/gm, '')
+            .replace(/^#+\s+.+$/gm, '')
+            .replace(/\*\*/g, '')
+            .replace(/!\[.*?\]\(.*?\)/g, '')
+            .replace(/\n+/g, ' ')
+            .trim()
+            .slice(0, 100) + '...';
+          
+          const date = new Date(article.publishedAt);
+          const formattedDate = date.toLocaleDateString('ja-JP', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+          });
+          
+          return `
+            <article class="card group overflow-hidden" data-article-slug="${article.slug}">
+              <a href="/articles/${article.slug}" class="block">
+                ${article.thumbnail ? `
+                  <div class="relative aspect-video overflow-hidden -mx-6 -mt-6 mb-4">
+                    <img 
+                      src="${article.thumbnail}" 
+                      alt="${article.title}"
+                      class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      loading="lazy"
+                    />
+                    ${articleTypeLabel ? `
+                      <span class="absolute top-3 left-3 bg-indigo-600 text-white text-xs font-bold px-2 py-1 rounded">
+                        ${articleTypeLabel}
+                      </span>
+                    ` : ''}
+                  </div>
+                ` : ''}
+                
+                <div class="flex flex-col h-full">
+                  <div class="mb-3 flex items-center gap-2">
+                    ${category ? `<span class="category-badge">${category.name}</span>` : ''}
+                  </div>
+                  
+                  <h3 class="text-lg font-bold text-gray-900 group-hover:text-blue-600 transition-colors mb-3 line-clamp-2">
+                    ${article.title}
+                  </h3>
+                  
+                  <p class="text-gray-600 text-sm leading-relaxed mb-4 flex-grow line-clamp-2">
+                    ${excerpt}
+                  </p>
+                  
+                  <div class="flex items-center justify-between text-sm text-gray-500 pt-4 border-t border-gray-100">
+                    <time datetime="${article.publishedAt}">
+                      ${formattedDate}
+                    </time>
+                    <span class="text-blue-600 group-hover:translate-x-1 transition-transform">
+                      読む →
+                    </span>
+                  </div>
+                </div>
+              </a>
+            </article>
+          `;
+        }).join('');
+      }
+    }
+    
+    // ふわっとアニメーションで表示
+    requestAnimationFrame(() => {
+      section.style.maxHeight = '1000px';
+      section.style.opacity = '1';
+      section.style.paddingBottom = '0';
+    });
+  }
+
+  // DOMContentLoadedで実行
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initRecommendedSection);
+  } else {
+    initRecommendedSection();
+  }
+</script>
+
+<style>
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+</style>
