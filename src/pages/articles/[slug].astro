@@ -15,6 +15,7 @@ import {
   getSiteSettings
 } from '../../lib/spreadsheet';
 import { parseMarkdown } from '../../lib/markdown';
+import { parseContentToBlocks, hasChatContent } from '../../lib/content-parser';
 import type { Article, Category, Author, Tag } from '../../types';
 
 // 静的パスを生成
@@ -44,13 +45,17 @@ const settings = await getSiteSettings();
 const siteTitle = settings.get('site_title') || 'My Media';
 
 // チャット記法【speaker】が含まれているかチェック
-const hasChatContent = /【[^\]]+】/.test(article.content);
+const hasChat = hasChatContent(article.content);
 
 // インタビュー記事かどうか（article_typeがinterviewまたはチャット記法が含まれている）
 const isInterview = article.articleType === 'interview';
 
 // 登場人物データ（intervieweesがある場合はそれを使用、なければ空配列）
 const speakers = article.interviewees || [];
+
+// コンテンツをパース（サーバーサイドで実行）
+const contentBlocks = hasChat ? parseContentToBlocks(article.content) : [];
+const parsedContent = !hasChat ? parseMarkdown(article.content) : '';
 
 // 日付をフォーマット
 const formatDate = (dateString: string) => {
@@ -81,7 +86,7 @@ const jsonLd = {
 };
 
 // 記事タイプのラベル
-const articleTypeLabel = isInterview ? 'インタビュー' : (hasChatContent ? '会話形式' : null);
+const articleTypeLabel = isInterview ? 'インタビュー' : (hasChat ? '会話形式' : null);
 ---
 
 <BaseLayout 
@@ -177,7 +182,7 @@ const articleTypeLabel = isInterview ? 'インタビュー' : (hasChatContent ? 
     </header>
 
     <!-- 登場人物の紹介（チャット記法がある場合） -->
-    {(hasChatContent || isInterview) && speakers.length > 0 && (
+    {(hasChat || isInterview) && speakers.length > 0 && (
       <section class="mb-10 p-6 bg-gradient-to-r from-indigo-50 to-blue-50 rounded-xl">
         <h2 class="text-lg font-bold text-gray-900 mb-4">登場人物</h2>
         <div class="grid gap-4 sm:grid-cols-2">
@@ -203,15 +208,14 @@ const articleTypeLabel = isInterview ? 'インタビュー' : (hasChatContent ? 
     )}
     
     <!-- 記事本文 -->
-    {hasChatContent ? (
+    {hasChat ? (
       <MixedContent
         client:load
-        content={article.content}
+        blocks={contentBlocks}
         speakers={speakers}
-        parseMarkdown={parseMarkdown}
       />
     ) : (
-      <div class="prose max-w-none" set:html={parseMarkdown(article.content)} />
+      <div class="prose max-w-none" set:html={parsedContent} />
     )}
     
     <!-- 著者情報 -->

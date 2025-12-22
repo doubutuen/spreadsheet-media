@@ -8,69 +8,23 @@ interface Speaker {
   avatar?: string;
 }
 
-interface ContentBlock {
+interface ParsedBlock {
   type: 'markdown' | 'chat';
-  content: string;
+  content: string;  // HTMLとしてパース済み
   speakerId?: string;
 }
 
 interface MixedContentProps {
-  content: string;
+  blocks: ParsedBlock[];
   speakers: Speaker[];
-  parseMarkdown: (text: string) => string;
-}
-
-/**
- * コンテンツをMarkdownブロックとチャットブロックに分割
- */
-function parseContent(content: string): ContentBlock[] {
-  const blocks: ContentBlock[] = [];
-  const lines = content.split('\n');
-  
-  let currentMarkdown: string[] = [];
-  const chatPattern = /^【([^\]]+)】(.*)$/;
-  
-  for (const line of lines) {
-    const match = line.match(chatPattern);
-    
-    if (match) {
-      // チャット行を検出
-      // 溜まっているMarkdownを先に追加
-      if (currentMarkdown.length > 0) {
-        const markdownText = currentMarkdown.join('\n').trim();
-        if (markdownText) {
-          blocks.push({ type: 'markdown', content: markdownText });
-        }
-        currentMarkdown = [];
-      }
-      
-      // チャットブロックを追加
-      const speakerId = match[1].trim();
-      const chatContent = match[2].trim();
-      blocks.push({ type: 'chat', content: chatContent, speakerId });
-    } else {
-      // 通常のMarkdown行
-      currentMarkdown.push(line);
-    }
-  }
-  
-  // 残りのMarkdownを追加
-  if (currentMarkdown.length > 0) {
-    const markdownText = currentMarkdown.join('\n').trim();
-    if (markdownText) {
-      blocks.push({ type: 'markdown', content: markdownText });
-    }
-  }
-  
-  return blocks;
 }
 
 /**
  * 連続するチャットブロックをグループ化
  */
-function groupChatBlocks(blocks: ContentBlock[]): (ContentBlock | ContentBlock[])[] {
-  const result: (ContentBlock | ContentBlock[])[] = [];
-  let currentChatGroup: ContentBlock[] = [];
+function groupChatBlocks(blocks: ParsedBlock[]): (ParsedBlock | ParsedBlock[])[] {
+  const result: (ParsedBlock | ParsedBlock[])[] = [];
+  let currentChatGroup: ParsedBlock[] = [];
   
   for (const block of blocks) {
     if (block.type === 'chat') {
@@ -91,8 +45,7 @@ function groupChatBlocks(blocks: ContentBlock[]): (ContentBlock | ContentBlock[]
   return result;
 }
 
-export default function MixedContent({ content, speakers, parseMarkdown }: MixedContentProps) {
-  const blocks = parseContent(content);
+export default function MixedContent({ blocks, speakers }: MixedContentProps) {
   const groupedBlocks = groupChatBlocks(blocks);
   
   // スピーカーマップを作成
@@ -123,14 +76,11 @@ export default function MixedContent({ content, speakers, parseMarkdown }: Mixed
                 }
                 const isAlternate = alternateCount % 2 === 0;
                 
-                // チャット内容をMarkdownとしてパース
-                const parsedContent = parseMarkdown(chatBlock.content);
-                
                 return (
                   <ChatBubble
                     key={chatIndex}
                     speaker={speaker}
-                    content={parsedContent}
+                    content={chatBlock.content}
                     isAlternate={isAlternate}
                   />
                 );
@@ -139,12 +89,11 @@ export default function MixedContent({ content, speakers, parseMarkdown }: Mixed
           );
         } else {
           // Markdownブロック
-          const parsedHtml = parseMarkdown(item.content);
           return (
             <div
               key={index}
               className="prose max-w-none"
-              dangerouslySetInnerHTML={{ __html: parsedHtml }}
+              dangerouslySetInnerHTML={{ __html: item.content }}
             />
           );
         }
