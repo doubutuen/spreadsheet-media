@@ -19,6 +19,7 @@ const heroTagline1 = settings.get('hero_tagline_1') || '静的サイト生成で
 const heroTagline2 = settings.get('hero_tagline_2') || 'スプレッドシートでCMS管理';
 const heroTagline3 = settings.get('hero_tagline_3') || 'SEO最適化済み';
 const headerSubtitle = settings.get('header_subtitle') || '';
+const pageTitle = settings.get('page_title') || siteTitle;
 
 // テーマ設定を取得（default: 'default', 'magazine'）
 const theme = settings.get('theme') || 'default';
@@ -34,7 +35,7 @@ const authorMap = new Map(authors.map(a => [a.id, a]));
       articles={articles}
       categories={categories}
       authors={authors}
-      siteTitle={siteTitle}
+      pageTitle={pageTitle}
       headerSubtitle={headerSubtitle}
     />
   </MagazineLayout>
