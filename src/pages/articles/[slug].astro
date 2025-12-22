@@ -3,7 +3,8 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import ArticleTracker from '../../components/ArticleTracker.astro';
 import RelatedArticles from '../../components/RelatedArticles.astro';
 import TagList from '../../components/TagList.astro';
-import InterviewArticle from '../../components/InterviewArticle.astro';
+import MixedContent from '../../components/MixedContent';
+import SpeakerAvatar from '../../components/SpeakerAvatar';
 import { 
   getPublishedArticles, 
   getArticleBySlug, 
@@ -42,11 +43,14 @@ const relatedArticles = await getRelatedArticles(article.id);
 const settings = await getSiteSettings();
 const siteTitle = settings.get('site_title') || 'My Media';
 
-// インタビュー記事かどうか
+// チャット記法【speaker】が含まれているかチェック
+const hasChatContent = /【[^\]]+】/.test(article.content);
+
+// インタビュー記事かどうか（article_typeがinterviewまたはチャット記法が含まれている）
 const isInterview = article.articleType === 'interview';
 
-// 通常記事の場合はMarkdownをパース
-const contentHtml = !isInterview ? parseMarkdown(article.content) : '';
+// 登場人物データ（intervieweesがある場合はそれを使用、なければ空配列）
+const speakers = article.interviewees || [];
 
 // 日付をフォーマット
 const formatDate = (dateString: string) => {
@@ -77,7 +81,7 @@ const jsonLd = {
 };
 
 // 記事タイプのラベル
-const articleTypeLabel = isInterview ? 'インタビュー' : null;
+const articleTypeLabel = isInterview ? 'インタビュー' : (hasChatContent ? '会話形式' : null);
 ---
 
 <BaseLayout 
@@ -172,24 +176,20 @@ const articleTypeLabel = isInterview ? 'インタビュー' : null;
       )}
     </header>
 
-    <!-- インタビュー対象者の紹介（インタビュー記事の場合） -->
-    {isInterview && article.interviewees && article.interviewees.length > 0 && (
+    <!-- 登場人物の紹介（チャット記法がある場合） -->
+    {(hasChatContent || isInterview) && speakers.length > 0 && (
       <section class="mb-10 p-6 bg-gradient-to-r from-indigo-50 to-blue-50 rounded-xl">
         <h2 class="text-lg font-bold text-gray-900 mb-4">登場人物</h2>
         <div class="grid gap-4 sm:grid-cols-2">
-          {article.interviewees.map((person) => (
+          {speakers.map((person) => (
             <div class="flex items-center gap-3 bg-white p-3 rounded-lg">
-              {person.avatar ? (
-                <img 
-                  src={person.avatar} 
-                  alt={person.name}
-                  class="w-12 h-12 rounded-full object-cover"
-                />
-              ) : (
-                <div class={`w-12 h-12 rounded-full flex items-center justify-center text-white font-bold ${person.id === 'interviewer' || person.id === 'Q' ? 'bg-blue-500' : 'bg-indigo-500'}`}>
-                  {person.name.charAt(0)}
-                </div>
-              )}
+              <SpeakerAvatar
+                client:load
+                speakerId={person.id}
+                name={person.name}
+                avatar={person.avatar}
+                size={48}
+              />
               <div>
                 <div class="font-bold text-gray-900">{person.name}</div>
                 {person.role && (
@@ -203,13 +203,15 @@ const articleTypeLabel = isInterview ? 'インタビュー' : null;
     )}
     
     <!-- 記事本文 -->
-    {isInterview && article.interviewees ? (
-      <InterviewArticle 
-        content={article.content} 
-        interviewees={article.interviewees} 
+    {hasChatContent ? (
+      <MixedContent
+        client:load
+        content={article.content}
+        speakers={speakers}
+        parseMarkdown={parseMarkdown}
       />
     ) : (
-      <div class="prose max-w-none" set:html={contentHtml} />
+      <div class="prose max-w-none" set:html={parseMarkdown(article.content)} />
     )}
     
     <!-- 著者情報 -->

@@ -26,6 +26,9 @@ export function parseMarkdown(markdown: string): string {
   // 斜体
   html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
   
+  // 画像
+  html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" class="rounded-lg my-4" loading="lazy" />');
+  
   // リンク
   html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
   
