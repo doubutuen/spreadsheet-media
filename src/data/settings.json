@@ -38,5 +38,21 @@
   {
     "key": "copyright_name",
     "value": "SpreadMedia"
+  },
+  {
+    "key": "theme",
+    "value": "default"
+  },
+  {
+    "key": "logo_text",
+    "value": "SpreadMedia"
+  },
+  {
+    "key": "logo_subtext",
+    "value": ""
+  },
+  {
+    "key": "header_subtitle",
+    "value": ""
   }
 ]

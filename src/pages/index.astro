@@ -1,7 +1,9 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import MagazineLayout from '../layouts/MagazineLayout.astro';
 import ArticleCard from '../components/ArticleCard.astro';
 import RecommendedArticles from '../components/RecommendedArticles.astro';
+import MagazineHome from '../components/MagazineHome.astro';
 import { getPublishedArticles, getCategories, getAuthors, getSiteSettings } from '../lib/spreadsheet';
 
 // スプレッドシートからデータを取得
@@ -16,58 +18,74 @@ const siteDescription = settings.get('site_description') || 'ウェブメディ�
 const heroTagline1 = settings.get('hero_tagline_1') || '静的サイト生成で高速表示';
 const heroTagline2 = settings.get('hero_tagline_2') || 'スプレッドシートでCMS管理';
 const heroTagline3 = settings.get('hero_tagline_3') || 'SEO最適化済み';
+const headerSubtitle = settings.get('header_subtitle') || '';
+
+// テーマ設定を取得（default: 'default', 'magazine'）
+const theme = settings.get('theme') || 'default';
 
 // カテゴリと著者のマップを作成
 const categoryMap = new Map(categories.map(c => [c.id, c]));
 const authorMap = new Map(authors.map(a => [a.id, a]));
 ---
 
-<BaseLayout>
-  <!-- ヒーローセクション -->
-  <section class="bg-gradient-to-br from-blue-600 to-indigo-700 text-white py-20">
-    <div class="max-w-6xl mx-auto px-4 text-center">
-      <h1 class="text-4xl md:text-5xl font-bold mb-6">
-        {siteTitle}
-      </h1>
-      <p class="text-xl md:text-2xl text-blue-100 mb-8 max-w-2xl mx-auto">
-        {siteDescription}
-      </p>
-      <div class="flex flex-wrap justify-center gap-4 text-sm">
-        <div class="bg-white/10 backdrop-blur rounded-lg px-4 py-2">
-          ⚡ {heroTagline1}
-        </div>
-        <div class="bg-white/10 backdrop-blur rounded-lg px-4 py-2">
-          📊 {heroTagline2}
-        </div>
-        <div class="bg-white/10 backdrop-blur rounded-lg px-4 py-2">
-          🔍 {heroTagline3}
+{theme === 'magazine' ? (
+  <MagazineLayout>
+    <MagazineHome 
+      articles={articles}
+      categories={categories}
+      authors={authors}
+      siteTitle={siteTitle}
+      headerSubtitle={headerSubtitle}
+    />
+  </MagazineLayout>
+) : (
+  <BaseLayout>
+    <!-- ヒーローセクション -->
+    <section class="bg-gradient-to-br from-blue-600 to-indigo-700 text-white py-20">
+      <div class="max-w-6xl mx-auto px-4 text-center">
+        <h1 class="text-4xl md:text-5xl font-bold mb-6">
+          {siteTitle}
+        </h1>
+        <p class="text-xl md:text-2xl text-blue-100 mb-8 max-w-2xl mx-auto">
+          {siteDescription}
+        </p>
+        <div class="flex flex-wrap justify-center gap-4 text-sm">
+          <div class="bg-white/10 backdrop-blur rounded-lg px-4 py-2">
+            ⚡ {heroTagline1}
+          </div>
+          <div class="bg-white/10 backdrop-blur rounded-lg px-4 py-2">
+            📊 {heroTagline2}
+          </div>
+          <div class="bg-white/10 backdrop-blur rounded-lg px-4 py-2">
+            🔍 {heroTagline3}
+          </div>
         </div>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <!-- おすすめ記事セクション（JS処理後にふわっと表示） -->
-  <RecommendedArticles 
-    articles={articles} 
-    categories={categories} 
-    authors={authors} 
-  />
+    <!-- おすすめ記事セクション（JS処理後にふわっと表示） -->
+    <RecommendedArticles 
+      articles={articles} 
+      categories={categories} 
+      authors={authors} 
+    />
 
-  <!-- 最新記事一覧セクション -->
-  <section class="max-w-6xl mx-auto px-4 py-16">
-    <div class="flex items-center justify-between mb-8">
-      <h2 class="text-3xl font-bold text-gray-900">最新記事</h2>
-      <span class="text-gray-500">{articles.length}件の記事</span>
-    </div>
-    
-    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {articles.map((article) => (
-        <ArticleCard 
-          article={article}
-          category={categoryMap.get(article.categoryId)}
-          author={authorMap.get(article.authorId)}
-        />
-      ))}
-    </div>
-  </section>
-</BaseLayout>
+    <!-- 最新記事一覧セクション -->
+    <section class="max-w-6xl mx-auto px-4 py-16">
+      <div class="flex items-center justify-between mb-8">
+        <h2 class="text-3xl font-bold text-gray-900">最新記事</h2>
+        <span class="text-gray-500">{articles.length}件の記事</span>
+      </div>
+      
+      <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {articles.map((article) => (
+          <ArticleCard 
+            article={article}
+            category={categoryMap.get(article.categoryId)}
+            author={authorMap.get(article.authorId)}
+          />
+        ))}
+      </div>
+    </section>
+  </BaseLayout>
+)}
