@@ -26,6 +26,9 @@ interface GASResponse {
   error?: string;
 }
 
+// データキャッシュ（ビルド中に同じデータを何度も取得しないようにする）
+let cachedData: SpreadsheetData | null = null;
+
 /**
  * GAS APIからデータを取得
  */
@@ -36,49 +39,76 @@ async function fetchFromGAS(): Promise<GASResponse> {
     throw new Error('GAS_API_URL is not set');
   }
   
-  const url = `${gasApiUrl}?action=all`;
+  // URLに既にクエリパラメータが含まれている場合は&を使用
+  const separator = gasApiUrl.includes('?') ? '&' : '?';
+  const url = `${gasApiUrl}${separator}action=all`;
   
-  const response = await fetch(url, {
-    method: 'GET',
-    headers: {
-      'Accept': 'application/json',
-    },
-  });
+  console.log('Fetching from URL:', url.substring(0, 100) + '...');
   
-  if (!response.ok) {
-    throw new Error(`Failed to fetch from GAS: ${response.statusText}`);
+  // AbortControllerでタイムアウトを設定（30秒）
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 30000);
+  
+  try {
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+      },
+      redirect: 'follow', // リダイレクトを明示的に追跡
+      signal: controller.signal,
+    });
+    
+    clearTimeout(timeoutId);
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch from GAS: ${response.status} ${response.statusText}`);
+    }
+    
+    const data = await response.json();
+    
+    if (data.error) {
+      throw new Error(`GAS API error: ${data.error}`);
+    }
+    
+    console.log('Successfully fetched data from GAS API');
+    return data;
+  } catch (error) {
+    clearTimeout(timeoutId);
+    throw error;
   }
-  
-  const data = await response.json();
-  
-  if (data.error) {
-    throw new Error(`GAS API error: ${data.error}`);
-  }
-  
-  return data;
 }
 
 /**
  * スプレッドシートから全データを取得
  * 環境変数が設定されていない場合はローカルのサンプルデータを使用
+ * キャッシュを使用してビルド中の重複リクエストを防ぐ
  */
 export async function getSpreadsheetData(): Promise<SpreadsheetData> {
+  // キャッシュがあればそれを返す
+  if (cachedData) {
+    return cachedData;
+  }
+  
   const gasApiUrl = import.meta.env.GAS_API_URL;
   
   // 環境変数が設定されていない場合はローカルデータを使用
   if (!gasApiUrl) {
     console.log('GAS_API_URL not set, using local data');
-    return getLocalData();
+    cachedData = getLocalData();
+    return cachedData;
   }
   
   // GAS APIからデータを取得
   try {
     console.log('Fetching data from GAS API...');
     const gasData = await fetchFromGAS();
-    return parseGASData(gasData);
+    cachedData = parseGASData(gasData);
+    return cachedData;
   } catch (error) {
     console.error('Failed to fetch from GAS API, using local data:', error);
-    return getLocalData();
+    cachedData = getLocalData();
+    return cachedData;
   }
 }
 
