@@ -50,7 +50,7 @@ function formatDate(dateStr: string | undefined): string {
         </div>
         <div class="featured-content">
           <div>
-            <span class="tag en-font">Feature</span>
+            <span class="magazine-tag en-font">Feature</span>
             <span class="date en-font">{formatDate(featuredArticle.publishedAt)}</span>
           </div>
           <h2>{featuredArticle.title}</h2>
@@ -81,17 +81,17 @@ function formatDate(dateStr: string | undefined): string {
   {gridArticles.length > 0 && (
     <>
       <h2 class="grid-header en-font">Latest Articles</h2>
-      <div class="grid">
+      <div class="magazine-grid">
         {gridArticles.map((article) => {
           const category = categoryMap.get(article.categoryId);
           return (
-            <a href={`/articles/${article.slug}`} class="card">
+            <a href={`/articles/${article.slug}`} class="magazine-card">
               <img 
                 src={article.thumbnail || 'https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=600&h=360&fit=crop'} 
                 alt={article.title}
               />
-              <div class="card-body">
-                <span class="tag tag-gray">{category?.name || 'Article'}</span>
+              <div class="magazine-card-body">
+                <span class="magazine-tag magazine-tag-gray">{category?.name || 'Article'}</span>
                 <h3>{article.title}</h3>
               </div>
             </a>

@@ -1,5 +1,4 @@
 ---
-import '../styles/global.css';
 import { getSiteSettings } from '../lib/spreadsheet';
 
 // スプレッドシートからサイト設定を取得
@@ -93,8 +92,9 @@ const currentUrl = canonicalUrl || Astro.url.href;
   <!-- Google Fonts - Zen Maru Gothic + Nunito -->
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800&family=Zen+Maru+Gothic:wght@400;500;700;900&display=swap" rel="stylesheet" />
   
-  <style>
-    :root {
+  <style is:global>
+    /* Magazine Theme - Reset and Override */
+    .magazine-theme {
       --primary-color: #2D3A45;
       --accent-color: #5D7A93;
       --bg-color: #F9FAFB;
@@ -102,8 +102,13 @@ const currentUrl = canonicalUrl || Astro.url.href;
       --border: #E5E7EB;
     }
 
-    body {
-      font-family: 'Zen Maru Gothic', sans-serif;
+    .magazine-theme,
+    .magazine-theme * {
+      font-family: 'Zen Maru Gothic', sans-serif !important;
+      box-sizing: border-box;
+    }
+
+    .magazine-theme {
       color: var(--primary-color);
       background-color: var(--bg-color);
       margin: 0;
@@ -111,10 +116,13 @@ const currentUrl = canonicalUrl || Astro.url.href;
       line-height: 1.6;
     }
 
-    .en-font { font-family: 'Nunito', sans-serif; font-weight: 700; }
+    .magazine-theme .en-font { 
+      font-family: 'Nunito', sans-serif !important; 
+      font-weight: 700; 
+    }
 
-    /* ヘッダー：コンパクトに */
-    header {
+    /* ヘッダー */
+    .magazine-theme .magazine-header {
       background: var(--white);
       padding: 1rem 2rem;
       display: flex;
@@ -126,25 +134,25 @@ const currentUrl = canonicalUrl || Astro.url.href;
       z-index: 100;
     }
 
-    .logo {
+    .magazine-theme .magazine-logo {
       font-size: 1.2rem;
       font-weight: 900;
       display: flex;
       align-items: center;
       gap: 10px;
-      text-decoration: none;
-      color: var(--primary-color);
+      text-decoration: none !important;
+      color: var(--primary-color) !important;
     }
     
-    .logo span {
+    .magazine-theme .magazine-logo span {
       font-size: 0.7rem;
       background: var(--primary-color);
-      color: white;
+      color: white !important;
       padding: 2px 6px;
       border-radius: 4px;
     }
 
-    nav ul {
+    .magazine-theme .magazine-nav ul {
       display: flex;
       list-style: none;
       gap: 20px;
@@ -152,24 +160,26 @@ const currentUrl = canonicalUrl || Astro.url.href;
       padding: 0;
     }
     
-    nav a {
-      text-decoration: none;
-      color: #666;
+    .magazine-theme .magazine-nav a {
+      text-decoration: none !important;
+      color: #666 !important;
       font-weight: 700;
       font-size: 0.9rem;
       transition: color 0.2s;
     }
-    nav a:hover { color: var(--accent-color); }
+    .magazine-theme .magazine-nav a:hover { 
+      color: var(--accent-color) !important; 
+    }
 
     /* コンテナ */
-    .container {
+    .magazine-theme .container {
       max-width: 1200px;
       margin: 2rem auto 6rem;
       padding: 0 2rem;
     }
 
-    /* ページタイトル（控えめに） */
-    .page-header {
+    /* ページタイトル */
+    .magazine-theme .page-header {
       margin-bottom: 2rem;
       border-bottom: 2px solid var(--primary-color);
       padding-bottom: 0.5rem;
@@ -178,20 +188,21 @@ const currentUrl = canonicalUrl || Astro.url.href;
       align-items: flex-end;
     }
 
-    .page-header h1 {
+    .magazine-theme .page-header h1 {
       font-size: 1.5rem;
       margin: 0;
       line-height: 1.2;
+      color: var(--primary-color);
     }
     
-    .page-header p {
+    .magazine-theme .page-header p {
       margin: 0;
       font-size: 0.8rem;
       color: #666;
     }
 
     /* マガジンレイアウト：トップエリア */
-    .magazine-top {
+    .magazine-theme .magazine-top {
       display: grid;
       grid-template-columns: 1.8fr 1.2fr;
       gap: 2rem;
@@ -199,36 +210,38 @@ const currentUrl = canonicalUrl || Astro.url.href;
     }
 
     /* 左側のメイン記事（フィーチャー） */
-    .featured-article {
+    .magazine-theme .featured-article {
       position: relative;
       border-radius: 12px;
       overflow: hidden;
       box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-      text-decoration: none;
-      color: inherit;
-      display: block;
-      background: var(--white);
-      height: 100%;
+      text-decoration: none !important;
+      color: inherit !important;
       display: flex;
       flex-direction: column;
+      background: var(--white);
+      height: 100%;
     }
 
-    .featured-img-container {
+    .magazine-theme .featured-img-container {
       width: 100%;
       height: 350px;
       overflow: hidden;
+      flex-shrink: 0;
     }
 
-    .featured-article img {
+    .magazine-theme .featured-article img {
       width: 100%;
       height: 100%;
       object-fit: cover;
       transition: transform 0.3s;
     }
 
-    .featured-article:hover img { transform: scale(1.03); }
+    .magazine-theme .featured-article:hover img { 
+      transform: scale(1.03); 
+    }
 
-    .featured-content {
+    .magazine-theme .featured-content {
       padding: 1.5rem;
       flex-grow: 1;
       display: flex;
@@ -236,54 +249,57 @@ const currentUrl = canonicalUrl || Astro.url.href;
       justify-content: center;
     }
 
-    .tag {
+    .magazine-theme .magazine-tag {
       background: var(--accent-color);
-      color: white;
+      color: white !important;
       padding: 4px 10px;
       border-radius: 4px;
       font-size: 0.75rem;
       font-weight: 700;
       display: inline-block;
-      margin-bottom: 0.8rem;
+      margin-right: 0.5rem;
     }
 
-    .tag-gray {
+    .magazine-theme .magazine-tag-gray {
       background: #ddd;
-      color: #555;
+      color: #555 !important;
     }
 
-    .featured-article h2 {
+    .magazine-theme .featured-article h2 {
       font-size: 1.8rem;
-      margin: 0 0 1rem;
+      margin: 0.8rem 0 1rem;
       line-height: 1.4;
+      color: var(--primary-color);
     }
     
-    .featured-desc {
+    .magazine-theme .featured-desc {
       color: #666;
       margin: 0;
       font-size: 1rem;
     }
 
     /* 右側のサイドリスト */
-    .side-list {
+    .magazine-theme .side-list {
       display: flex;
       flex-direction: column;
       gap: 1.5rem;
     }
 
-    .side-article {
+    .magazine-theme .side-article {
       display: flex;
       gap: 1rem;
       align-items: flex-start;
-      text-decoration: none;
-      color: var(--primary-color);
+      text-decoration: none !important;
+      color: var(--primary-color) !important;
       padding-bottom: 1.5rem;
       border-bottom: 1px solid #eee;
     }
 
-    .side-article:last-child { border-bottom: none; }
+    .magazine-theme .side-article:last-child { 
+      border-bottom: none; 
+    }
 
-    .side-img {
+    .magazine-theme .side-img {
       width: 100px;
       height: 80px;
       border-radius: 8px;
@@ -292,58 +308,67 @@ const currentUrl = canonicalUrl || Astro.url.href;
       flex-shrink: 0;
     }
 
-    .side-content h3 {
+    .magazine-theme .side-content h3 {
       margin: 0 0 0.5rem;
       font-size: 1rem;
       line-height: 1.5;
+      color: var(--primary-color);
     }
 
-    .date {
+    .magazine-theme .date {
       font-size: 0.75rem;
       color: #999;
     }
 
     /* 下部のグリッド記事 */
-    .grid-header {
+    .magazine-theme .grid-header {
       font-size: 1.2rem;
       margin-bottom: 1.5rem;
       font-weight: 900;
+      color: var(--primary-color);
     }
 
-    .grid {
+    .magazine-theme .magazine-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
       gap: 2rem;
     }
 
-    .card {
+    .magazine-theme .magazine-card {
       background: var(--white);
       border-radius: 12px;
       overflow: hidden;
       border: 1px solid var(--border);
-      text-decoration: none;
-      color: inherit;
+      text-decoration: none !important;
+      color: inherit !important;
       transition: transform 0.2s;
+      padding: 0 !important;
+      box-shadow: none !important;
     }
 
-    .card:hover { transform: translateY(-4px); }
+    .magazine-theme .magazine-card:hover { 
+      transform: translateY(-4px); 
+    }
 
-    .card img {
+    .magazine-theme .magazine-card img {
       width: 100%;
       height: 180px;
       object-fit: cover;
     }
 
-    .card-body { padding: 1.2rem; }
+    .magazine-theme .magazine-card-body { 
+      padding: 1.2rem; 
+    }
 
-    .card h3 {
+    .magazine-theme .magazine-card h3 {
       font-size: 1.1rem;
       margin: 0.5rem 0;
       line-height: 1.4;
+      color: var(--primary-color);
     }
 
     /* フッター */
-    footer {
+    .magazine-theme .magazine-footer {
       text-align: center;
       padding: 3rem;
       color: #999;
@@ -352,26 +377,32 @@ const currentUrl = canonicalUrl || Astro.url.href;
 
     /* レスポンシブ対応 */
     @media (max-width: 768px) {
-      header {
+      .magazine-theme .magazine-header {
         flex-direction: column;
         gap: 1rem;
         padding: 1rem;
       }
-      .magazine-top {
+      .magazine-theme .magazine-top {
         grid-template-columns: 1fr;
       }
-      .featured-img-container { height: 250px; }
-      .page-header { flex-direction: column; align-items: flex-start; gap: 0.5rem;}
+      .magazine-theme .featured-img-container { 
+        height: 250px; 
+      }
+      .magazine-theme .page-header { 
+        flex-direction: column; 
+        align-items: flex-start; 
+        gap: 0.5rem;
+      }
     }
   </style>
 </head>
-<body>
-  <header>
-    <a href="/" class="logo">
+<body class="magazine-theme">
+  <header class="magazine-header">
+    <a href="/" class="magazine-logo">
       {logoText}
       {logoSubtext && <span>{logoSubtext}</span>}
     </a>
-    <nav>
+    <nav class="magazine-nav">
       <ul>
         <li><a href="/" class="en-font">New</a></li>
         <li><a href="/categories" class="en-font">Categories</a></li>
@@ -382,7 +413,7 @@ const currentUrl = canonicalUrl || Astro.url.href;
   
   <slot />
   
-  <footer class="en-font">
+  <footer class="magazine-footer en-font">
     &copy; {copyrightYear} {copyrightName}.
   </footer>
 </body>
