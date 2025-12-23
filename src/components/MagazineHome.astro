@@ -18,7 +18,10 @@ const authorMap = new Map(authors.map(a => [a.id, a]));
 // 最新記事を取得
 const featuredArticle = articles[0];
 const sideArticles = articles.slice(1, 4);
-const gridArticles = articles.slice(4, 10);
+// gridArticlesは5番目以降の記事、または記事が4件以下の場合は2番目以降を使用
+const gridArticles = articles.length > 4 
+  ? articles.slice(4, 10) 
+  : articles.slice(1, 7);
 
 // 日付フォーマット
 function formatDate(dateStr: string | undefined): string {
