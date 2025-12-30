@@ -572,10 +572,17 @@ const currentUrl = canonicalUrl || Astro.url.href;
       color: #999;
     }
 
-    /* 記事本文 */
+    /* 記事本文 - OS標準のゴシック体を使用 */
     .magazine-theme .article-content {
+      font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, Arial, sans-serif;
       line-height: 1.9;
       color: var(--primary-color);
+    }
+
+    .magazine-theme .article-content p,
+    .magazine-theme .article-content li,
+    .magazine-theme .article-content blockquote {
+      font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, Arial, sans-serif;
     }
 
     .magazine-theme .article-content h2 {
