@@ -84,10 +84,16 @@ Googleスプレッドシートをデータソースとして使用する高速�
 | key | value | 説明 |
 |-----|-------|------|
 | site_title | サイト名 | サイトのタイトル |
-| site_description | 説明文 | SEO用の説明 |
-| site_url | https://... | サイトURL |
-| theme | magazine | テーマ（magazine/default） |
-| image_folder_url | https://drive.google.com/... | 画像フォルダURL |
+| site_description | 説明文 | SEO用の説明文 |
+| site_url | https://... | サイトのURL |
+| og_image | /images/og.jpg | OGP画像のパス |
+| twitter_handle | @example | Twitterアカウント |
+| theme | magazine | テーマ（magazine / default） |
+| logo_text | LOGO | ヘッダーロゴのテキスト |
+| logo_subtext | サブテキスト | ロゴの下に表示するサブテキスト |
+| page_title | ページタイトル | トップページのメインタイトル |
+| header_subtitle | サブタイトル | ヘッダーのサブタイトル |
+| image_folder_url | https://drive.google.com/... | 画像フォルダのURL |
 
 ### ステップ2: GASをデプロイ
 
