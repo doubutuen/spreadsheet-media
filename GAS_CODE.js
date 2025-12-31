@@ -15,13 +15,13 @@
  * 8. デプロイしてURLをコピー
  * 
  * 画像機能を使う場合:
- * 1. Google Driveに「spreadmedia-images」フォルダを作成
- * 2. そのフォルダに画像をアップロード
- * 3. スプレッドシートのthumbnail列にファイル名を入力（例: my-image.jpg）
+ * 1. Google Driveに画像用フォルダを作成
+ * 2. フォルダを開いてURLからフォルダIDをコピー
+ *    （例: https://drive.google.com/drive/folders/XXXXX の XXXXX 部分）
+ * 3. settingsシートに image_folder_id キーでフォルダIDを設定
+ * 4. そのフォルダに画像をアップロード
+ * 5. スプレッドシートのthumbnail列にファイル名を入力（例: my-image.jpg）
  */
-
-// 画像フォルダ名（Google Drive内）
-const IMAGE_FOLDER_NAME = 'spreadmedia-images';
 
 /**
  * GETリクエストを処理するメイン関数
@@ -143,43 +143,87 @@ function sheetToJson(sheet) {
 }
 
 /**
- * 画像フォルダを取得または作成
+ * settingsシートから設定値を取得
  */
-function getImageFolder() {
-  const folders = DriveApp.getFoldersByName(IMAGE_FOLDER_NAME);
+function getSetting(key) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName('settings');
   
-  if (folders.hasNext()) {
-    return folders.next();
+  if (!sheet) {
+    return null;
   }
   
-  // フォルダが存在しない場合は作成
-  return DriveApp.createFolder(IMAGE_FOLDER_NAME);
+  const data = sheet.getDataRange().getValues();
+  
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][0] === key) {
+      return data[i][1];
+    }
+  }
+  
+  return null;
+}
+
+/**
+ * 画像フォルダを取得
+ * settingsシートの image_folder_id または image_folder_url から取得
+ */
+function getImageFolder() {
+  // まずフォルダIDを確認
+  let folderId = getSetting('image_folder_id');
+  
+  // フォルダIDがない場合はURLから抽出を試みる
+  if (!folderId) {
+    const folderUrl = getSetting('image_folder_url');
+    if (folderUrl) {
+      // URLからフォルダIDを抽出
+      // 形式: https://drive.google.com/drive/folders/FOLDER_ID
+      const match = folderUrl.match(/folders\/([a-zA-Z0-9_-]+)/);
+      if (match) {
+        folderId = match[1];
+      }
+    }
+  }
+  
+  if (!folderId) {
+    throw new Error('image_folder_id or image_folder_url is not set in settings sheet. Please add a row with key "image_folder_id" and the Google Drive folder ID as value.');
+  }
+  
+  try {
+    return DriveApp.getFolderById(folderId);
+  } catch (e) {
+    throw new Error(`Cannot access folder with ID "${folderId}". Make sure the folder exists and you have access to it.`);
+  }
 }
 
 /**
  * 画像一覧を取得
  */
 function getImageList() {
-  const folder = getImageFolder();
-  const files = folder.getFiles();
-  const images = [];
-  
-  while (files.hasNext()) {
-    const file = files.next();
-    const mimeType = file.getMimeType();
+  try {
+    const folder = getImageFolder();
+    const files = folder.getFiles();
+    const images = [];
     
-    // 画像ファイルのみを対象
-    if (mimeType.startsWith('image/')) {
-      images.push({
-        filename: file.getName(),
-        mimeType: mimeType,
-        size: file.getSize(),
-        lastUpdated: file.getLastUpdated().toISOString()
-      });
+    while (files.hasNext()) {
+      const file = files.next();
+      const mimeType = file.getMimeType();
+      
+      // 画像ファイルのみを対象
+      if (mimeType.startsWith('image/')) {
+        images.push({
+          filename: file.getName(),
+          mimeType: mimeType,
+          size: file.getSize(),
+          lastUpdated: file.getLastUpdated().toISOString()
+        });
+      }
     }
+    
+    return { images: images };
+  } catch (e) {
+    return { error: e.message, images: [] };
   }
-  
-  return { images: images };
 }
 
 /**
@@ -190,7 +234,7 @@ function getImageBase64(filename) {
   const files = folder.getFilesByName(filename);
   
   if (!files.hasNext()) {
-    throw new Error(`Image "${filename}" not found in ${IMAGE_FOLDER_NAME} folder`);
+    throw new Error(`Image "${filename}" not found in the image folder`);
   }
   
   const file = files.next();
@@ -257,10 +301,11 @@ function testGetImageList() {
 }
 
 /**
- * テスト用関数 - 画像フォルダを作成
+ * テスト用関数 - 設定値を確認
  */
-function testCreateImageFolder() {
-  const folder = getImageFolder();
-  console.log('Folder ID:', folder.getId());
-  console.log('Folder URL:', folder.getUrl());
+function testGetSettings() {
+  const folderId = getSetting('image_folder_id');
+  const folderUrl = getSetting('image_folder_url');
+  console.log('image_folder_id:', folderId);
+  console.log('image_folder_url:', folderUrl);
 }

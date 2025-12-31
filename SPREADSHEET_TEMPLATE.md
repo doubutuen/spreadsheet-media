@@ -155,6 +155,7 @@
 | og_image | OGP画像のパス |
 | twitter_handle | Twitterアカウント |
 | theme | テーマ（default または magazine） |
+| image_folder_url | 画像フォルダのGoogle Drive URL |
 
 ---
 
@@ -162,12 +163,29 @@
 
 ### セットアップ
 
-1. Google Driveに `spreadmedia-images` という名前のフォルダを作成
-2. GASコードを更新してデプロイ（画像取得機能が追加されています）
+1. Google Driveに画像用フォルダを作成（名前は任意）
+2. フォルダを開いてURLをコピー
+   - 例: `https://drive.google.com/drive/folders/1ABC123xyz...`
+3. settingsシートに以下のいずれかを追加:
+   - `image_folder_url`: フォルダのURLをそのまま貼り付け
+   - `image_folder_id`: フォルダIDのみを入力（URLの `folders/` 以降の部分）
+4. GASコードを更新してデプロイ
+
+### settingsシートの設定例
+
+| key | value |
+|-----|-------|
+| image_folder_url | https://drive.google.com/drive/folders/1ABC123xyz... |
+
+または
+
+| key | value |
+|-----|-------|
+| image_folder_id | 1ABC123xyz... |
 
 ### 使い方
 
-1. `spreadmedia-images` フォルダに画像をアップロード
+1. 設定したフォルダに画像をアップロード
 2. スプレッドシートの `thumbnail` 列にファイル名を入力（例: `article-1.jpg`）
 3. サイトを再ビルドすると、画像が自動的にダウンロードされて配置されます
 
