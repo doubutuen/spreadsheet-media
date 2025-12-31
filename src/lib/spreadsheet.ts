@@ -128,7 +128,7 @@ function parseGASData(gasData: GASResponse): SpreadsheetData {
     publishedAt: a.published_at || '',
     relatedArticleIds: a.related_article_ids ? String(a.related_article_ids).split(',').map((id: string) => parseInt(id.trim())).filter(n => !isNaN(n)) : [],
     metaDescription: a.meta_description || '',
-    thumbnail: a.thumbnail || undefined,
+    thumbnail: convertThumbnailPath(a.thumbnail),
     images: parseImages(a.images),
     articleType: a.article_type || 'standard',
     interviewees: parseInterviewees(a.interviewees)
@@ -161,6 +161,23 @@ function parseGASData(gasData: GASResponse): SpreadsheetData {
   });
 
   return { articles, categories, tags, authors, settings };
+}
+
+/**
+ * サムネイルパスを変換
+ * - URLの場合はそのまま返す
+ * - ファイル名の場合は /images/uploads/ パスに変換
+ */
+function convertThumbnailPath(thumbnail: string | undefined | null): string | undefined {
+  if (!thumbnail) return undefined;
+  
+  // 既にURLの場合はそのまま返す
+  if (thumbnail.startsWith('http://') || thumbnail.startsWith('https://') || thumbnail.startsWith('/')) {
+    return thumbnail;
+  }
+  
+  // ファイル名の場合はローカルパスに変換
+  return `/images/uploads/${thumbnail}`;
 }
 
 /**
@@ -205,7 +222,7 @@ function getLocalData(): SpreadsheetData {
     relatedArticleIds: a.related_article_ids ? a.related_article_ids.split(',').map((id: string) => parseInt(id.trim())) : [],
     metaDescription: a.meta_description,
     // 新規フィールド
-    thumbnail: a.thumbnail || undefined,
+    thumbnail: convertThumbnailPath(a.thumbnail),
     images: parseImages(a.images),
     articleType: a.article_type || 'standard',
     interviewees: parseInterviewees(a.interviewees)

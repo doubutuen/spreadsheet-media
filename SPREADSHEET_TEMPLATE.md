@@ -25,10 +25,25 @@
 | published_at | 公開日時（YYYY-MM-DD HH:MM:SS形式） | 2025-12-18 10:00:00 |
 | related_article_ids | 関連記事のID（カンマ区切り） | 2,3 |
 | meta_description | SEO用の説明文（160文字以内推奨） | この記事では... |
-| **thumbnail** | サムネイル画像のURL | https://example.com/image.jpg |
+| **thumbnail** | サムネイル画像（ファイル名またはURL） | my-image.jpg または https://... |
 | **images** | 本文内で使用する画像（JSON形式） | [{"url":"...", "alt":"..."}] |
 | **article_type** | 記事タイプ（standard または interview） | standard |
 | **interviewees** | インタビュー対象者（JSON形式、interview時のみ） | [{"id":"yamada", "name":"山田", "role":"CTO"}] |
+
+### サムネイル画像の設定方法
+
+**方法1: Google Driveからアップロード（推奨）**
+
+1. Google Driveに `spreadmedia-images` フォルダを作成
+2. そのフォルダに画像をアップロード
+3. スプレッドシートの `thumbnail` 列にファイル名だけを入力（例: `my-article.jpg`）
+4. ビルド時に自動的に画像がダウンロードされ、サイトに配置されます
+
+**方法2: 外部URLを直接指定**
+
+`thumbnail` 列に画像のURLを直接入力することもできます。
+- 例: `https://images.unsplash.com/photo-xxx`
+- 例: `https://drive.google.com/uc?id=xxx`
 
 ### 記事タイプについて
 
@@ -139,40 +154,60 @@
 | site_url | サイトのURL |
 | og_image | OGP画像のパス |
 | twitter_handle | Twitterアカウント |
+| theme | テーマ（default または magazine） |
 
 ---
 
-## Google Sheets API との連携
+## 画像アップロード機能
+
+### セットアップ
+
+1. Google Driveに `spreadmedia-images` という名前のフォルダを作成
+2. GASコードを更新してデプロイ（画像取得機能が追加されています）
+
+### 使い方
+
+1. `spreadmedia-images` フォルダに画像をアップロード
+2. スプレッドシートの `thumbnail` 列にファイル名を入力（例: `article-1.jpg`）
+3. サイトを再ビルドすると、画像が自動的にダウンロードされて配置されます
+
+### 対応フォーマット
+
+- JPEG (.jpg, .jpeg)
+- PNG (.png)
+- GIF (.gif)
+- WebP (.webp)
+
+### 画像の差し替え
+
+同じファイル名で新しい画像をGoogle Driveにアップロードし、サイトを再ビルドするだけで差し替えられます。
+
+---
+
+## Google Apps Script (GAS) との連携
 
 本番環境でGoogle スプレッドシートと連携するには、以下の手順が必要です：
 
-### 1. Google Cloud Console でプロジェクトを作成
+### 1. GASプロジェクトを作成
 
-1. [Google Cloud Console](https://console.cloud.google.com/) にアクセス
-2. 新しいプロジェクトを作成
+1. スプレッドシートを開く
+2. 「拡張機能」→「Apps Script」を選択
+3. `GAS_CODE.js` の内容を貼り付けて保存
 
-### 2. Google Sheets API を有効化
+### 2. ウェブアプリとしてデプロイ
 
-1. 「APIとサービス」→「ライブラリ」
-2. 「Google Sheets API」を検索して有効化
+1. 「デプロイ」→「新しいデプロイ」
+2. 種類: 「ウェブアプリ」を選択
+3. 実行するユーザー: 「自分」
+4. アクセスできるユーザー: 「全員」
+5. デプロイしてURLをコピー
 
-### 3. サービスアカウントを作成
+### 3. 環境変数を設定
 
-1. 「APIとサービス」→「認証情報」
-2. 「認証情報を作成」→「サービスアカウント」
-3. サービスアカウントを作成し、JSONキーをダウンロード
+Cloudflare Pagesの環境変数に以下を設定:
 
-### 4. スプレッドシートを共有
-
-1. 作成したスプレッドシートを開く
-2. 「共有」ボタンをクリック
-3. サービスアカウントのメールアドレスを追加（閲覧者権限）
-
-### 5. 環境変数を設定
-
-```env
-GOOGLE_SHEETS_ID=your-spreadsheet-id
-GOOGLE_SERVICE_ACCOUNT_KEY={"type":"service_account",...}
+```
+GAS_API_URL=https://script.google.com/macros/s/xxx/exec
 ```
 
 ---
@@ -186,3 +221,4 @@ GOOGLE_SERVICE_ACCOUNT_KEY={"type":"service_account",...}
 - **related_article_ids**を設定すると、記事ページに関連記事が表示されます
 - **thumbnail**を設定すると、記事一覧とOGP画像に使用されます
 - **article_type**を`interview`にすると、インタビュー形式で表示されます
+- **theme**を`magazine`にすると、マガジンテーマが適用されます

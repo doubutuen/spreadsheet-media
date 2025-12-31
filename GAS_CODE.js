@@ -13,7 +13,15 @@
  * 6. 実行するユーザー: 「自分」
  * 7. アクセスできるユーザー: 「全員」
  * 8. デプロイしてURLをコピー
+ * 
+ * 画像機能を使う場合:
+ * 1. Google Driveに「spreadmedia-images」フォルダを作成
+ * 2. そのフォルダに画像をアップロード
+ * 3. スプレッドシートのthumbnail列にファイル名を入力（例: my-image.jpg）
  */
+
+// 画像フォルダ名（Google Drive内）
+const IMAGE_FOLDER_NAME = 'spreadmedia-images';
 
 /**
  * GETリクエストを処理するメイン関数
@@ -28,6 +36,16 @@ function doGet(e) {
     if (action === 'all') {
       // 全シートのデータを取得
       data = getAllData();
+    } else if (action === 'images') {
+      // 画像一覧を取得
+      data = getImageList();
+    } else if (action === 'image') {
+      // 特定の画像をBase64で取得
+      const filename = e.parameter.filename;
+      if (!filename) {
+        throw new Error('filename parameter is required');
+      }
+      data = getImageBase64(filename);
     } else if (sheet) {
       // 特定のシートのデータを取得
       data = getSheetData(sheet);
@@ -125,6 +143,96 @@ function sheetToJson(sheet) {
 }
 
 /**
+ * 画像フォルダを取得または作成
+ */
+function getImageFolder() {
+  const folders = DriveApp.getFoldersByName(IMAGE_FOLDER_NAME);
+  
+  if (folders.hasNext()) {
+    return folders.next();
+  }
+  
+  // フォルダが存在しない場合は作成
+  return DriveApp.createFolder(IMAGE_FOLDER_NAME);
+}
+
+/**
+ * 画像一覧を取得
+ */
+function getImageList() {
+  const folder = getImageFolder();
+  const files = folder.getFiles();
+  const images = [];
+  
+  while (files.hasNext()) {
+    const file = files.next();
+    const mimeType = file.getMimeType();
+    
+    // 画像ファイルのみを対象
+    if (mimeType.startsWith('image/')) {
+      images.push({
+        filename: file.getName(),
+        mimeType: mimeType,
+        size: file.getSize(),
+        lastUpdated: file.getLastUpdated().toISOString()
+      });
+    }
+  }
+  
+  return { images: images };
+}
+
+/**
+ * 特定の画像をBase64で取得
+ */
+function getImageBase64(filename) {
+  const folder = getImageFolder();
+  const files = folder.getFilesByName(filename);
+  
+  if (!files.hasNext()) {
+    throw new Error(`Image "${filename}" not found in ${IMAGE_FOLDER_NAME} folder`);
+  }
+  
+  const file = files.next();
+  const blob = file.getBlob();
+  const base64 = Utilities.base64Encode(blob.getBytes());
+  
+  return {
+    filename: filename,
+    mimeType: file.getMimeType(),
+    base64: base64
+  };
+}
+
+/**
+ * 全画像をBase64で取得（ビルド時に一括取得用）
+ */
+function getAllImagesBase64() {
+  const folder = getImageFolder();
+  const files = folder.getFiles();
+  const images = [];
+  
+  while (files.hasNext()) {
+    const file = files.next();
+    const mimeType = file.getMimeType();
+    
+    // 画像ファイルのみを対象
+    if (mimeType.startsWith('image/')) {
+      const blob = file.getBlob();
+      const base64 = Utilities.base64Encode(blob.getBytes());
+      
+      images.push({
+        filename: file.getName(),
+        mimeType: mimeType,
+        base64: base64
+      });
+    }
+  }
+  
+  return { images: images };
+}
+
+/**
  * テスト用関数 - スクリプトエディタから実行して動作確認
  */
 function testGetAllData() {
@@ -138,4 +246,21 @@ function testGetAllData() {
 function testGetArticles() {
   const data = getSheetData('articles');
   console.log(JSON.stringify(data, null, 2));
+}
+
+/**
+ * テスト用関数 - 画像一覧を確認
+ */
+function testGetImageList() {
+  const data = getImageList();
+  console.log(JSON.stringify(data, null, 2));
+}
+
+/**
+ * テスト用関数 - 画像フォルダを作成
+ */
+function testCreateImageFolder() {
+  const folder = getImageFolder();
+  console.log('Folder ID:', folder.getId());
+  console.log('Folder URL:', folder.getUrl());
 }
