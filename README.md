@@ -12,6 +12,7 @@ Googleスプレッドシートをデータソースとして使用する高速�
 | 画像管理 | Google Driveから自動取得してCDN配信 |
 | マガジンテーマ | 洗練されたマガジン風デザイン |
 | インタビュー記事 | 対話形式の記事を吹き出しUIで表示 |
+| ワンクリックデプロイ | スプレッドシートから直接サイト更新 |
 
 ## 技術スタック
 
@@ -94,6 +95,7 @@ Googleスプレッドシートをデータソースとして使用する高速�
 | page_title | ページタイトル | トップページのメインタイトル |
 | header_subtitle | サブタイトル | ヘッダーのサブタイトル |
 | image_folder_url | https://drive.google.com/... | 画像フォルダのURL |
+| deploy_hook_url | https://api.cloudflare.com/... | CloudflareのDeploy Hook URL |
 
 ### ステップ2: GASをデプロイ
 
@@ -106,8 +108,121 @@ Googleスプレッドシートをデータソースとして使用する高速�
 ```javascript
 /**
  * SpreadMedia - Google Apps Script API
+ * 
+ * このスクリプトをスプレッドシートに追加して、ウェブアプリとしてデプロイすると
+ * SpreadMediaからデータを取得できるようになります。
+ * 
+ * デプロイ機能を使う場合:
+ * 1. Cloudflare PagesでDeploy Hookを作成
+ *    - Settings → Builds & deployments → Deploy hooks → Add deploy hook
+ * 2. settingsシートに deploy_hook_url キーでDeploy Hook URLを設定
+ * 3. settingsシートに site_url キーでサイトURLを設定（任意）
+ * 4. スプレッドシートを開くと「🚀 サイト管理」メニューが表示される
  */
 
+// ============================================================
+// メニュー・UI関連
+// ============================================================
+
+/**
+ * スプレッドシートを開いた時にカスタムメニューを追加
+ */
+function onOpen() {
+  const ui = SpreadsheetApp.getUi();
+  ui.createMenu('🚀 サイト管理')
+    .addItem('📤 デプロイを実行', 'triggerDeploy')
+    .addSeparator()
+    .addItem('🔍 設定を確認', 'showSettings')
+    .addToUi();
+}
+
+/**
+ * Cloudflare Pagesにデプロイをトリガーする
+ */
+function triggerDeploy() {
+  const deployHookUrl = getSetting('deploy_hook_url');
+  const siteUrl = getSetting('site_url') || 'サイト';
+  
+  if (!deployHookUrl) {
+    SpreadsheetApp.getUi().alert(
+      '⚠️ 設定が必要です',
+      'settingsシートに deploy_hook_url が設定されていません。\n\n' +
+      'Cloudflare PagesでDeploy Hookを作成し、URLを設定してください。\n\n' +
+      '設定方法:\n' +
+      '1. Cloudflare Dashboard → Pages → プロジェクト\n' +
+      '2. Settings → Builds & deployments → Deploy hooks\n' +
+      '3. Add deploy hook → URLをコピー\n' +
+      '4. settingsシートに deploy_hook_url として追加',
+      SpreadsheetApp.getUi().ButtonSet.OK
+    );
+    return;
+  }
+  
+  try {
+    const response = UrlFetchApp.fetch(deployHookUrl, {
+      method: 'POST',
+      muteHttpExceptions: true
+    });
+    
+    const statusCode = response.getResponseCode();
+    const responseText = response.getContentText();
+    
+    if (statusCode === 200) {
+      SpreadsheetApp.getUi().alert(
+        '✅ デプロイ開始',
+        'Cloudflare Pagesへのデプロイを開始しました。\n\n' +
+        '完了まで2〜3分かかります。\n\n' +
+        'サイト: ' + siteUrl,
+        SpreadsheetApp.getUi().ButtonSet.OK
+      );
+    } else {
+      SpreadsheetApp.getUi().alert(
+        '❌ デプロイ失敗',
+        'デプロイのトリガーに失敗しました。\n\n' +
+        'ステータスコード: ' + statusCode + '\n' +
+        'レスポンス: ' + responseText,
+        SpreadsheetApp.getUi().ButtonSet.OK
+      );
+    }
+  } catch (error) {
+    SpreadsheetApp.getUi().alert(
+      '❌ エラー',
+      'エラーが発生しました: ' + error.message,
+      SpreadsheetApp.getUi().ButtonSet.OK
+    );
+  }
+}
+
+/**
+ * 現在の設定を表示
+ */
+function showSettings() {
+  const settings = [
+    'site_title',
+    'site_url',
+    'theme',
+    'deploy_hook_url',
+    'image_folder_url'
+  ];
+  
+  let message = '現在の設定:\n\n';
+  
+  settings.forEach(key => {
+    const value = getSetting(key);
+    const displayValue = value ? (key.includes('hook') ? '設定済み ✓' : value) : '未設定';
+    message += `${key}: ${displayValue}\n`;
+  });
+  
+  SpreadsheetApp.getUi().alert('⚙️ 設定確認', message, SpreadsheetApp.getUi().ButtonSet.OK);
+}
+
+// ============================================================
+// API関連（GETリクエスト処理）
+// ============================================================
+
+/**
+ * GETリクエストを処理するメイン関数
+ */
 function doGet(e) {
   try {
     const sheet = e.parameter.sheet;
@@ -142,6 +257,9 @@ function doGet(e) {
   }
 }
 
+/**
+ * 全シートのデータを取得
+ */
 function getAllData() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sheets = ss.getSheets();
@@ -155,6 +273,9 @@ function getAllData() {
   return result;
 }
 
+/**
+ * 特定のシートのデータを取得
+ */
 function getSheetData(sheetName) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sheet = ss.getSheetByName(sheetName);
@@ -166,12 +287,18 @@ function getSheetData(sheetName) {
   return sheetToJson(sheet);
 }
 
+/**
+ * シート一覧を取得
+ */
 function getSheetList() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sheets = ss.getSheets();
   return sheets.map(sheet => sheet.getName());
 }
 
+/**
+ * シートのデータをJSON形式に変換
+ */
 function sheetToJson(sheet) {
   const data = sheet.getDataRange().getValues();
   
@@ -200,6 +327,13 @@ function sheetToJson(sheet) {
   });
 }
 
+// ============================================================
+// 設定関連
+// ============================================================
+
+/**
+ * settingsシートから設定値を取得
+ */
 function getSetting(key) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sheet = ss.getSheetByName('settings');
@@ -219,6 +353,13 @@ function getSetting(key) {
   return null;
 }
 
+// ============================================================
+// 画像関連
+// ============================================================
+
+/**
+ * 画像フォルダを取得
+ */
 function getImageFolder() {
   let folderId = getSetting('image_folder_id');
   
@@ -243,6 +384,9 @@ function getImageFolder() {
   }
 }
 
+/**
+ * 画像一覧を取得
+ */
 function getImageList() {
   try {
     const folder = getImageFolder();
@@ -269,6 +413,9 @@ function getImageList() {
   }
 }
 
+/**
+ * 特定の画像をBase64で取得
+ */
 function getImageBase64(filename) {
   const folder = getImageFolder();
   const files = folder.getFilesByName(filename);
@@ -318,6 +465,15 @@ function getImageBase64(filename) {
 | GAS_API_URL | GASのデプロイURL |
 
 6. 「Save and Deploy」
+
+### ステップ4: Deploy Hookを設定（ワンクリックデプロイ用）
+
+1. Cloudflare Dashboard → Pages → プロジェクト → Settings
+2. Builds & deployments → Deploy hooks → Add deploy hook
+3. 名前を入力（例: `SpreadSheet Deploy`）→ Add
+4. 生成されたURLをコピー
+5. スプレッドシートのsettingsシートに `deploy_hook_url` として追加
+6. スプレッドシートを再読み込みすると「🚀 サイト管理」メニューが表示される
 
 ---
 
@@ -390,6 +546,11 @@ Markdown形式で本文を記述:
 
 ### 記事の追加・編集
 
+**方法1: スプレッドシートから直接（推奨）**
+1. スプレッドシートを編集
+2. 「🚀 サイト管理」→「📤 デプロイを実行」をクリック
+
+**方法2: Cloudflareから**
 1. スプレッドシートを編集
 2. Cloudflare Pagesで再デプロイ（Deployments → Retry deployment）
 
