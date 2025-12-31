@@ -301,6 +301,7 @@ function getSheetList() {
  */
 function sheetToJson(sheet) {
   const data = sheet.getDataRange().getValues();
+  const sheetName = sheet.getName();
   
   if (data.length === 0) {
     return [];
@@ -323,6 +324,10 @@ function sheetToJson(sheet) {
     });
     return obj;
   }).filter(row => {
+    // settingsシートは key でフィルタリング
+    if (sheetName === 'settings') {
+      return row.key !== null && row.key !== undefined && row.key !== '';
+    }
     return row.id !== null && row.id !== undefined && row.id !== '';
   });
 }

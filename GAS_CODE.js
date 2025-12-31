@@ -216,6 +216,7 @@ function getSheetList() {
  */
 function sheetToJson(sheet) {
   const data = sheet.getDataRange().getValues();
+  const sheetName = sheet.getName();
   
   if (data.length === 0) {
     return [];
@@ -243,7 +244,11 @@ function sheetToJson(sheet) {
     });
     return obj;
   }).filter(row => {
-    // 完全に空の行を除外（idがnullまたは空の行）
+    // settingsシートの場合はkeyでフィルタリング
+    if (sheetName === 'settings') {
+      return row.key !== null && row.key !== undefined && row.key !== '';
+    }
+    // その他のシートはidでフィルタリング
     return row.id !== null && row.id !== undefined && row.id !== '';
   });
 }
