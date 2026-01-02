@@ -150,7 +150,7 @@ function parseGASData(gasData: GASResponse): SpreadsheetData {
     id: Number(a.id),
     name: a.name || '',
     profile: a.profile || '',
-    avatar: a.avatar || undefined
+    avatar: convertThumbnailPath(a.avatar)
   }));
 
   const settings = new Map<string, string>();
@@ -164,15 +164,54 @@ function parseGASData(gasData: GASResponse): SpreadsheetData {
 }
 
 /**
+ * Google DriveのURLからファイルIDを抽出
+ */
+function extractGoogleDriveFileId(url: string): string | null {
+  // 形式1: https://drive.google.com/file/d/FILE_ID/view?...
+  const fileMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+  if (fileMatch) return fileMatch[1];
+  
+  // 形式2: https://drive.google.com/open?id=FILE_ID
+  const openMatch = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  if (openMatch) return openMatch[1];
+  
+  return null;
+}
+
+/**
+ * URLがGoogle DriveのURLかどうかを判定
+ */
+function isGoogleDriveUrl(url: string): boolean {
+  return url.includes('drive.google.com') || url.includes('docs.google.com');
+}
+
+/**
  * サムネイルパスを変換
- * - URLの場合はそのまま返す
- * - ファイル名の場合は /images/uploads/ パスに変換
+ * - 外部URL（Unsplash等）: そのまま返す
+ * - Google Drive URL: ローカルパスに変換（ビルド時にダウンロード済み）
+ * - ファイル名: /images/uploads/ パスに変換
  */
 function convertThumbnailPath(thumbnail: string | undefined | null): string | undefined {
   if (!thumbnail) return undefined;
   
-  // 既にURLの場合はそのまま返す
-  if (thumbnail.startsWith('http://') || thumbnail.startsWith('https://') || thumbnail.startsWith('/')) {
+  // Google Drive URLの場合
+  if (isGoogleDriveUrl(thumbnail)) {
+    const fileId = extractGoogleDriveFileId(thumbnail);
+    if (fileId) {
+      // ビルド時にダウンロードされたファイルのパスを返す
+      return `/images/uploads/gdrive_${fileId}.png`;
+    }
+    // ファイルIDが抽出できない場合は元のURLを返す（表示されないが）
+    return thumbnail;
+  }
+  
+  // 既に外部URLの場合はそのまま返す（Unsplash等）
+  if (thumbnail.startsWith('http://') || thumbnail.startsWith('https://')) {
+    return thumbnail;
+  }
+  
+  // 既にローカルパスの場合はそのまま返す
+  if (thumbnail.startsWith('/')) {
     return thumbnail;
   }
   
@@ -244,7 +283,7 @@ function getLocalData(): SpreadsheetData {
     id: a.id,
     name: a.name,
     profile: a.profile,
-    avatar: a.avatar || undefined
+    avatar: convertThumbnailPath(a.avatar)
   }));
 
   const settings = new Map<string, string>();

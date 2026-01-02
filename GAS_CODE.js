@@ -14,12 +14,10 @@
  * 7. アクセスできるユーザー: 「全員」
  * 8. デプロイしてURLをコピー
  * 
- * 画像機能を使う場合:
- * 1. Google Driveに画像用フォルダを作成
- * 2. settingsシートに image_folder_url キーでフォルダURLを設定
- *    （例: https://drive.google.com/drive/folders/XXXXX）
- * 3. そのフォルダに画像をアップロード
- * 4. スプレッドシートのthumbnail列にファイル名を入力（例: my-image.jpg）
+ * 画像の指定方法（thumbnail列）:
+ * - ファイル名: 01.png（image_folder_urlで指定したフォルダ内のファイル）
+ * - Google Drive URL: https://drive.google.com/file/d/XXXXX/view?...
+ * - 外部URL: https://images.unsplash.com/...（そのまま使用）
  * 
  * デプロイ機能を使う場合:
  * 1. Cloudflare PagesでDeploy Hookを作成
@@ -143,15 +141,8 @@ function doGet(e) {
       // 全シートのデータを取得
       data = getAllData();
     } else if (action === 'images') {
-      // 画像一覧を取得（公開URLを含む）
+      // 画像フォルダ内の画像一覧を取得（公開URLを含む）
       data = getImageListWithUrls();
-    } else if (action === 'image') {
-      // 特定の画像をBase64で取得（後方互換性のため残す）
-      const filename = e.parameter.filename;
-      if (!filename) {
-        throw new Error('filename parameter is required');
-      }
-      data = getImageBase64(filename);
     } else if (sheet) {
       // 特定のシートのデータを取得
       data = getSheetData(sheet);
@@ -305,7 +296,7 @@ function getImageFolder() {
   }
   
   if (!folderId) {
-    throw new Error('image_folder_id or image_folder_url is not set in settings sheet. Please add a row with key "image_folder_url" and the Google Drive folder URL as value.');
+    throw new Error('image_folder_id or image_folder_url is not set in settings sheet.');
   }
   
   try {
@@ -316,7 +307,7 @@ function getImageFolder() {
 }
 
 /**
- * 画像一覧を取得（公開URLを含む）
+ * 画像フォルダ内の画像一覧を取得（公開URLを含む）
  * ビルド時にこのURLから直接ダウンロードできる
  */
 function getImageListWithUrls() {
@@ -337,19 +328,17 @@ function getImageListWithUrls() {
         try {
           file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
         } catch (shareError) {
-          // 共有設定に失敗しても続行（既に共有されている場合など）
+          // 共有設定に失敗しても続行
           console.log('Could not set sharing for ' + file.getName() + ': ' + shareError.message);
         }
         
         // 直接ダウンロード可能なURLを生成
-        // Google Driveの直接ダウンロードURL形式
         const downloadUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
         
         images.push({
           filename: file.getName(),
           mimeType: mimeType,
           size: file.getSize(),
-          lastUpdated: file.getLastUpdated().toISOString(),
           fileId: fileId,
           downloadUrl: downloadUrl
         });
@@ -362,65 +351,6 @@ function getImageListWithUrls() {
   }
 }
 
-/**
- * 画像一覧を取得（後方互換性のため残す）
- */
-function getImageList() {
-  return getImageListWithUrls();
-}
-
-/**
- * 特定の画像をBase64で取得（後方互換性のため残す）
- */
-function getImageBase64(filename) {
-  const folder = getImageFolder();
-  const files = folder.getFilesByName(filename);
-  
-  if (!files.hasNext()) {
-    throw new Error(`Image "${filename}" not found in the image folder`);
-  }
-  
-  const file = files.next();
-  const blob = file.getBlob();
-  const base64 = Utilities.base64Encode(blob.getBytes());
-  
-  return {
-    filename: filename,
-    mimeType: file.getMimeType(),
-    base64: base64
-  };
-}
-
-/**
- * 全画像をBase64で取得（ビルド時に一括取得用）- 非推奨
- * 注意: 大きな画像ファイルではGASのサイズ制限に引っかかる可能性があります
- * 代わりに getImageListWithUrls() を使用してください
- */
-function getAllImagesBase64() {
-  const folder = getImageFolder();
-  const files = folder.getFiles();
-  const images = [];
-  
-  while (files.hasNext()) {
-    const file = files.next();
-    const mimeType = file.getMimeType();
-    
-    // 画像ファイルのみを対象
-    if (mimeType.startsWith('image/')) {
-      const blob = file.getBlob();
-      const base64 = Utilities.base64Encode(blob.getBytes());
-      
-      images.push({
-        filename: file.getName(),
-        mimeType: mimeType,
-        base64: base64
-      });
-    }
-  }
-  
-  return { images: images };
-}
-
 // ============================================================
 // テスト用関数
 // ============================================================
@@ -430,14 +360,6 @@ function getAllImagesBase64() {
  */
 function testGetAllData() {
   const data = getAllData();
-  console.log(JSON.stringify(data, null, 2));
-}
-
-/**
- * テスト用関数 - 特定のシートのデータを確認
- */
-function testGetArticles() {
-  const data = getSheetData('articles');
   console.log(JSON.stringify(data, null, 2));
 }
 
