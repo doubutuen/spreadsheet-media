@@ -12,6 +12,7 @@ const copyrightYear = settings.get('copyright_year') || new Date().getFullYear()
 const copyrightName = settings.get('copyright_name') || siteTitle;
 const logoText = settings.get('logo_text') || siteTitle;
 const logoSubtext = settings.get('logo_subtext') || '';
+const favicon = settings.get('favicon') || '/favicon.svg';
 
 interface Props {
   title?: string;
@@ -83,7 +84,13 @@ const currentUrl = canonicalUrl || Astro.url.href;
   )}
   
   <!-- Favicon -->
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  {favicon.endsWith('.svg') ? (
+    <link rel="icon" type="image/svg+xml" href={favicon} />
+  ) : favicon.endsWith('.ico') ? (
+    <link rel="icon" type="image/x-icon" href={favicon} />
+  ) : (
+    <link rel="icon" type="image/png" href={favicon} />
+  )}
   
   <!-- Preconnect to external domains -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />

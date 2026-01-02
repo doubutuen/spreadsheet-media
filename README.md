@@ -95,6 +95,7 @@ Googleスプレッドシートをデータソースとして使用する高速�
 | page_title | ページタイトル | トップページのメインタイトル |
 | header_subtitle | サブタイトル | ヘッダーのサブタイトル |
 | image_folder_url | https://drive.google.com/... | 画像フォルダのURL |
+| favicon | /favicon.svg | ファビコン（.svg, .ico, .png対応） |
 | deploy_hook_url | https://api.cloudflare.com/... | CloudflareのDeploy Hook URL |
 
 ### ステップ2: GASをデプロイ
