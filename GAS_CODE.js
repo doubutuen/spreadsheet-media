@@ -143,10 +143,10 @@ function doGet(e) {
       // 全シートのデータを取得
       data = getAllData();
     } else if (action === 'images') {
-      // 画像一覧を取得
-      data = getImageList();
+      // 画像一覧を取得（公開URLを含む）
+      data = getImageListWithUrls();
     } else if (action === 'image') {
-      // 特定の画像をBase64で取得
+      // 特定の画像をBase64で取得（後方互換性のため残す）
       const filename = e.parameter.filename;
       if (!filename) {
         throw new Error('filename parameter is required');
@@ -316,9 +316,10 @@ function getImageFolder() {
 }
 
 /**
- * 画像一覧を取得
+ * 画像一覧を取得（公開URLを含む）
+ * ビルド時にこのURLから直接ダウンロードできる
  */
-function getImageList() {
+function getImageListWithUrls() {
   try {
     const folder = getImageFolder();
     const files = folder.getFiles();
@@ -330,11 +331,27 @@ function getImageList() {
       
       // 画像ファイルのみを対象
       if (mimeType.startsWith('image/')) {
+        const fileId = file.getId();
+        
+        // ファイルを「リンクを知っている全員」に共有設定
+        try {
+          file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+        } catch (shareError) {
+          // 共有設定に失敗しても続行（既に共有されている場合など）
+          console.log('Could not set sharing for ' + file.getName() + ': ' + shareError.message);
+        }
+        
+        // 直接ダウンロード可能なURLを生成
+        // Google Driveの直接ダウンロードURL形式
+        const downloadUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
+        
         images.push({
           filename: file.getName(),
           mimeType: mimeType,
           size: file.getSize(),
-          lastUpdated: file.getLastUpdated().toISOString()
+          lastUpdated: file.getLastUpdated().toISOString(),
+          fileId: fileId,
+          downloadUrl: downloadUrl
         });
       }
     }
@@ -346,7 +363,14 @@ function getImageList() {
 }
 
 /**
- * 特定の画像をBase64で取得
+ * 画像一覧を取得（後方互換性のため残す）
+ */
+function getImageList() {
+  return getImageListWithUrls();
+}
+
+/**
+ * 特定の画像をBase64で取得（後方互換性のため残す）
  */
 function getImageBase64(filename) {
   const folder = getImageFolder();
@@ -368,7 +392,9 @@ function getImageBase64(filename) {
 }
 
 /**
- * 全画像をBase64で取得（ビルド時に一括取得用）
+ * 全画像をBase64で取得（ビルド時に一括取得用）- 非推奨
+ * 注意: 大きな画像ファイルではGASのサイズ制限に引っかかる可能性があります
+ * 代わりに getImageListWithUrls() を使用してください
  */
 function getAllImagesBase64() {
   const folder = getImageFolder();
@@ -419,7 +445,7 @@ function testGetArticles() {
  * テスト用関数 - 画像一覧を確認
  */
 function testGetImageList() {
-  const data = getImageList();
+  const data = getImageListWithUrls();
   console.log(JSON.stringify(data, null, 2));
 }
 
