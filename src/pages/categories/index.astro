@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import MagazineLayout from '../../layouts/MagazineLayout.astro';
 import { getCategories, getPublishedArticles, getSiteSettings } from '../../lib/spreadsheet';
 
 const categories = await getCategories();
@@ -7,6 +8,8 @@ const articles = await getPublishedArticles();
 const settings = await getSiteSettings();
 
 const siteTitle = settings.get('site_title') || 'My Media';
+const theme = settings.get('theme') || 'default';
+const isMagazineTheme = theme === 'magazine';
 
 // 各カテゴリの記事数をカウント
 const categoryArticleCounts = new Map<number, number>();
@@ -14,32 +17,115 @@ articles.forEach(article => {
   const count = categoryArticleCounts.get(article.categoryId) || 0;
   categoryArticleCounts.set(article.categoryId, count + 1);
 });
+
+const Layout = isMagazineTheme ? MagazineLayout : BaseLayout;
 ---
 
-<BaseLayout 
-  title="カテゴリ一覧"
-  description={`${siteTitle}の全カテゴリ一覧です。様々なカテゴリの記事をご覧いただけます。`}
->
-  <div class="max-w-6xl mx-auto px-4 py-12">
-    <h1 class="text-3xl font-bold text-gray-900 mb-8">カテゴリ一覧</h1>
-    
-    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {categories.map((category) => {
-        const articleCount = categoryArticleCounts.get(category.id) || 0;
-        return (
-          <a 
-            href={`/categories/${category.slug}`}
-            class="card group"
-          >
-            <h2 class="text-xl font-bold text-gray-900 group-hover:text-blue-600 transition-colors mb-2">
-              {category.name}
-            </h2>
-            <p class="text-gray-500 text-sm">
-              {articleCount}件の記事
-            </p>
-          </a>
-        );
-      })}
+{isMagazineTheme ? (
+  <MagazineLayout 
+    title="カテゴリ一覧"
+    description={`${siteTitle}の全カテゴリ一覧です。様々なカテゴリの記事をご覧いただけます。`}
+  >
+    <div class="magazine-list-page">
+      <h1 class="page-title">Categories</h1>
+      <p class="page-subtitle">カテゴリ一覧</p>
+      
+      <div class="category-grid">
+        {categories.map((category) => {
+          const articleCount = categoryArticleCounts.get(category.id) || 0;
+          return (
+            <a href={`/categories/${category.slug}`} class="category-card">
+              <h2 class="category-name">{category.name}</h2>
+              <p class="category-count">{articleCount}件の記事</p>
+            </a>
+          );
+        })}
+      </div>
     </div>
-  </div>
-</BaseLayout>
+  </MagazineLayout>
+) : (
+  <BaseLayout 
+    title="カテゴリ一覧"
+    description={`${siteTitle}の全カテゴリ一覧です。様々なカテゴリの記事をご覧いただけます。`}
+  >
+    <div class="max-w-6xl mx-auto px-4 py-12">
+      <h1 class="text-3xl font-bold text-gray-900 mb-8">カテゴリ一覧</h1>
+      
+      <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {categories.map((category) => {
+          const articleCount = categoryArticleCounts.get(category.id) || 0;
+          return (
+            <a 
+              href={`/categories/${category.slug}`}
+              class="card group"
+            >
+              <h2 class="text-xl font-bold text-gray-900 group-hover:text-blue-600 transition-colors mb-2">
+                {category.name}
+              </h2>
+              <p class="text-gray-500 text-sm">
+                {articleCount}件の記事
+              </p>
+            </a>
+          );
+        })}
+      </div>
+    </div>
+  </BaseLayout>
+)}
+
+<style>
+  .magazine-list-page {
+    max-width: 1200px;
+    margin: 2rem auto 6rem;
+    padding: 0 2rem;
+  }
+  
+  .page-title {
+    font-family: 'Nunito', sans-serif;
+    font-size: 2rem;
+    font-weight: 900;
+    color: #2D3A45;
+    margin-bottom: 0.25rem;
+  }
+  
+  .page-subtitle {
+    font-family: 'Zen Maru Gothic', sans-serif;
+    font-size: 1rem;
+    color: #5D7A93;
+    margin-bottom: 2rem;
+  }
+  
+  .category-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.5rem;
+  }
+  
+  .category-card {
+    background: #fff;
+    border: 1px solid #E5E7EB;
+    border-radius: 12px;
+    padding: 1.5rem;
+    text-decoration: none;
+    transition: all 0.2s ease;
+  }
+  
+  .category-card:hover {
+    border-color: #5D7A93;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  }
+  
+  .category-name {
+    font-family: 'Zen Maru Gothic', sans-serif;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #2D3A45;
+    margin-bottom: 0.5rem;
+  }
+  
+  .category-count {
+    font-family: 'Zen Maru Gothic', sans-serif;
+    font-size: 0.9rem;
+    color: #5D7A93;
+  }
+</style>
