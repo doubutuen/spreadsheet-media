@@ -1,9 +1,11 @@
 /**
  * ビルド時にGoogle Driveから画像をダウンロードするスクリプト
  * 
- * 以下の2つのソースから画像をダウンロードします：
+ * 以下のソースから画像をダウンロードします：
  * 1. image_folder_url で指定されたフォルダ内の全画像（GAS API経由）
  * 2. articles の thumbnail 列に指定された Google Drive URL
+ * 3. authors の avatar 列に指定された Google Drive URL
+ * 4. settings の favicon に指定された Google Drive URL
  * 
  * 使用方法:
  * GAS_API_URL=your-gas-url node scripts/download-images.js
@@ -295,6 +297,47 @@ async function downloadImages() {
         console.error(`  Error: ${error.message}`);
         failCount++;
       }
+    }
+    
+    // ========================================
+    // 5. settings の favicon からGoogle Drive URLを抽出してダウンロード
+    // ========================================
+    console.log('\n--- Downloading favicon from settings ---');
+    const settings = allData.settings || [];
+    const faviconSetting = settings.find(s => s.key === 'favicon');
+    
+    if (faviconSetting && faviconSetting.value && isGoogleDriveUrl(faviconSetting.value)) {
+      const faviconUrl = faviconSetting.value;
+      const fileId = extractGoogleDriveFileId(faviconUrl);
+      
+      if (fileId) {
+        // faviconは特別な名前で保存（拡張子は元のファイルに合わせる）
+        const filename = `favicon_${fileId}.ico`;
+        
+        if (!downloadedFiles.has(filename)) {
+          console.log(`\nDownloading favicon:`);
+          console.log(`  URL: ${faviconUrl}`);
+          console.log(`  File ID: ${fileId}`);
+          
+          try {
+            const arrayBuffer = await downloadFromGoogleDrive(fileId);
+            const buffer = Buffer.from(arrayBuffer);
+            const outputPath = path.join(OUTPUT_DIR, filename);
+            fs.writeFileSync(outputPath, buffer);
+            
+            console.log(`  Saved: ${outputPath} (${(buffer.length / 1024).toFixed(2)} KB)`);
+            downloadedFiles.add(filename);
+            successCount++;
+          } catch (error) {
+            console.error(`  Error: ${error.message}`);
+            failCount++;
+          }
+        }
+      } else {
+        console.log(`  Skipping invalid favicon URL: ${faviconUrl}`);
+      }
+    } else {
+      console.log('  No Google Drive favicon URL found in settings');
     }
     
   } catch (error) {

@@ -156,7 +156,15 @@ function parseGASData(gasData: GASResponse): SpreadsheetData {
   const settings = new Map<string, string>();
   (gasData.settings || []).forEach(s => {
     if (s.key) {
-      settings.set(s.key, s.value || '');
+      let value = s.value || '';
+      // faviconがGoogle Drive URLの場合はローカルパスに変換
+      if (s.key === 'favicon' && value && isGoogleDriveUrl(value)) {
+        const fileId = extractGoogleDriveFileId(value);
+        if (fileId) {
+          value = `/images/uploads/favicon_${fileId}.ico`;
+        }
+      }
+      settings.set(s.key, value);
     }
   });
 
