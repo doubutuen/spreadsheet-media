@@ -112,6 +112,13 @@ const currentUrl = canonicalUrl || Astro.url.href;
       margin: 0;
       padding: 0;
       line-height: 1.6;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .magazine-theme main {
+      flex: 1;
     }
 
     .magazine-theme * {
@@ -795,7 +802,9 @@ const currentUrl = canonicalUrl || Astro.url.href;
     </nav>
   </header>
   
-  <slot />
+  <main>
+    <slot />
+  </main>
   
   <footer class="magazine-footer en-font">
     &copy; {copyrightYear} {copyrightName}.
