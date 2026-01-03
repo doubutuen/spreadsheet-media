@@ -300,7 +300,56 @@ async function downloadImages() {
     }
     
     // ========================================
-    // 5. settings の favicon からGoogle Drive URLを抽出してダウンロード
+    // 5. articles の interviewees の avatar からGoogle Drive URLを抽出してダウンロード
+    // ========================================
+    console.log('\n--- Downloading from interviewee avatars ---');
+    
+    for (const article of articles) {
+      if (!article.interviewees) continue;
+      
+      let interviewees = [];
+      try {
+        interviewees = typeof article.interviewees === 'string' 
+          ? JSON.parse(article.interviewees) 
+          : article.interviewees;
+      } catch {
+        continue;
+      }
+      
+      for (const person of interviewees) {
+        const avatar = person.avatar;
+        
+        if (!avatar || !isGoogleDriveUrl(avatar)) continue;
+        
+        const fileId = extractGoogleDriveFileId(avatar);
+        if (!fileId) continue;
+        
+        const filename = `gdrive_${fileId}.png`;
+        
+        if (downloadedFiles.has(filename)) continue;
+        
+        console.log(`\nDownloading avatar for interviewee "${person.name}":`);
+        console.log(`  URL: ${avatar}`);
+        console.log(`  File ID: ${fileId}`);
+        
+        try {
+          const arrayBuffer = await downloadFromGoogleDrive(fileId);
+          const buffer = Buffer.from(arrayBuffer);
+          const outputPath = path.join(OUTPUT_DIR, filename);
+          fs.writeFileSync(outputPath, buffer);
+          
+          console.log(`  Saved: ${outputPath} (${(buffer.length / 1024 / 1024).toFixed(2)} MB)`);
+          downloadedFiles.add(filename);
+          successCount++;
+        } catch (error) {
+          console.error(`  Error: ${error.message}`);
+          failCount++;
+        }
+      }
+    }
+    
+    // ========================================
+    // 6. settings の favicon からGoogle Drive URLを抽出してダウンロード
     // ========================================
     console.log('\n--- Downloading favicon from settings ---');
     const settings = allData.settings || [];

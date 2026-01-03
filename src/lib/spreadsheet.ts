@@ -229,11 +229,17 @@ function convertThumbnailPath(thumbnail: string | undefined | null): string | un
 
 /**
  * インタビュー対象者のJSONをパース
+ * avatarフィールドがGoogle Drive URLの場合はローカルパスに変換
  */
 function parseInterviewees(intervieweesStr: string | undefined | null): Interviewee[] | undefined {
   if (!intervieweesStr) return undefined;
   try {
-    return JSON.parse(intervieweesStr);
+    const interviewees = JSON.parse(intervieweesStr);
+    // 各intervieweeのavatarを変換
+    return interviewees.map((i: any) => ({
+      ...i,
+      avatar: i.avatar ? convertThumbnailPath(i.avatar) : undefined
+    }));
   } catch {
     return undefined;
   }
