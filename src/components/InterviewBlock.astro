@@ -2,8 +2,10 @@
 /**
  * インタビュー発言ブロックコンポーネント
  * 話者のアバター、名前、発言内容を表示
+ * SpeakerAvatarコンポーネントを使用して、AIアイコンを統一表示
  */
 import type { Interviewee } from '../types';
+import SpeakerAvatar from './SpeakerAvatar';
 
 interface Props {
   speaker: Interviewee;
@@ -12,25 +14,18 @@ interface Props {
 }
 
 const { speaker, content, isInterviewer = false } = Astro.props;
-
-// デフォルトアバター（名前の頭文字）
-const initials = speaker.name.charAt(0);
 ---
 
 <div class={`interview-block flex gap-4 my-6 ${isInterviewer ? 'flex-row-reverse' : ''}`}>
-  <!-- アバター -->
+  <!-- アバター（SpeakerAvatarコンポーネントを使用） -->
   <div class="flex-shrink-0">
-    {speaker.avatar ? (
-      <img 
-        src={speaker.avatar} 
-        alt={speaker.name}
-        class="w-12 h-12 rounded-full object-cover border-2 border-gray-200"
-      />
-    ) : (
-      <div class={`w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg ${isInterviewer ? 'bg-blue-500' : 'bg-indigo-500'}`}>
-        {initials}
-      </div>
-    )}
+    <SpeakerAvatar
+      client:load
+      speakerId={speaker.id}
+      name={speaker.name}
+      avatar={speaker.avatar}
+      size={48}
+    />
   </div>
   
   <!-- 発言内容 -->
