@@ -141,7 +141,7 @@ export default function SpeakerAvatar({ speakerId, name, avatar, size = 40 }: Sp
         <img
           src={avatar}
           alt={name}
-          style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center top' }}
+          style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 25%' }}
         />
       </div>
     );
