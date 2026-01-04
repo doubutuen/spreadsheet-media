@@ -16,7 +16,7 @@ interface ChatBubbleProps {
 
 export default function ChatBubble({ speaker, content, isAlternate = false }: ChatBubbleProps) {
   return (
-    <div className={`flex gap-3 mb-4 ${isAlternate ? 'flex-row-reverse' : ''}`}>
+    <div className={`flex gap-3 mb-4 items-start ${isAlternate ? 'flex-row-reverse' : ''}`}>
       {/* アバター */}
       <div className="flex-shrink-0">
         <SpeakerAvatar
