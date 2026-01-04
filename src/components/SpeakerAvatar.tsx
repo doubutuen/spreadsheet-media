@@ -136,12 +136,23 @@ export default function SpeakerAvatar({ speakerId, name, avatar, size = 40 }: Sp
           borderRadius: '50%',
           border: '2px solid #e5e7eb',
           overflow: 'hidden',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: '#f3f4f6',
         }}
       >
         <img
           src={avatar}
           alt={name}
-          style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center top' }}
+          style={{ 
+            maxWidth: '100%', 
+            maxHeight: '100%', 
+            width: 'auto',
+            height: 'auto',
+            objectFit: 'cover',
+            objectPosition: 'center center'
+          }}
         />
       </div>
     );
