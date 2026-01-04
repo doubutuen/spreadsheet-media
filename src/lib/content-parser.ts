@@ -4,6 +4,7 @@ interface ParsedBlock {
   type: 'markdown' | 'chat';
   content: string;  // HTMLとしてパース済み
   speakerId?: string;
+  position?: 'left' | 'right';  // 強制的な左右配置
 }
 
 /**
@@ -16,10 +17,12 @@ export function parseContentToBlocks(content: string): ParsedBlock[] {
   let currentMarkdown: string[] = [];
   let currentChatSpeaker: string | null = null;
   let currentChatContent: string[] = [];
+  let currentChatPosition: 'left' | 'right' | undefined = undefined;
   
   // 両方の記法をサポート: 【speaker】内容 と [speaker:id] (次行に内容)
-  const inlineChatPattern = /^【([^\]]+)】(.+)$/;
-  const speakerOnlyPattern = /^\[speaker:([^\]]+)\]$/;
+  // <> 記号で左右強制: 【speaker<】 = 左, 【speaker>】 = 右
+  const inlineChatPattern = /^【([^\]<>]+)([<>])?】(.+)$/;
+  const speakerOnlyPattern = /^\[speaker:([^\]<>]+)([<>])?\]$/;
   
   const flushMarkdown = () => {
     if (currentMarkdown.length > 0) {
@@ -41,11 +44,13 @@ export function parseContentToBlocks(content: string): ParsedBlock[] {
         blocks.push({ 
           type: 'chat', 
           content: parseMarkdown(chatText), 
-          speakerId: currentChatSpeaker 
+          speakerId: currentChatSpeaker,
+          position: currentChatPosition
         });
       }
       currentChatSpeaker = null;
       currentChatContent = [];
+      currentChatPosition = undefined;
     }
   };
   
@@ -59,11 +64,14 @@ export function parseContentToBlocks(content: string): ParsedBlock[] {
       flushChat();
       
       const speakerId = inlineMatch[1].trim();
-      const chatContent = inlineMatch[2].trim();
+      const positionMarker = inlineMatch[2];  // '<' or '>' or undefined
+      const chatContent = inlineMatch[3].trim();
+      const position = positionMarker === '<' ? 'left' : positionMarker === '>' ? 'right' : undefined;
       blocks.push({ 
         type: 'chat', 
         content: parseMarkdown(chatContent), 
-        speakerId 
+        speakerId,
+        position
       });
       continue;
     }
@@ -75,6 +83,8 @@ export function parseContentToBlocks(content: string): ParsedBlock[] {
       flushChat();
       
       currentChatSpeaker = speakerMatch[1].trim();
+      const positionMarker = speakerMatch[2];  // '<' or '>' or undefined
+      currentChatPosition = positionMarker === '<' ? 'left' : positionMarker === '>' ? 'right' : undefined;
       currentChatContent = [];
       continue;
     }

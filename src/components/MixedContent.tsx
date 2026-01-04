@@ -6,12 +6,14 @@ interface Speaker {
   name: string;
   role?: string;
   avatar?: string;
+  position?: 'left' | 'right';  // intervieweesで指定されたデフォルト位置
 }
 
 interface ParsedBlock {
   type: 'markdown' | 'chat';
   content: string;  // HTMLとしてパース済み
   speakerId?: string;
+  position?: 'left' | 'right';  // 本文中の<>で指定された位置
 }
 
 interface MixedContentProps {
@@ -69,12 +71,23 @@ export default function MixedContent({ blocks, speakers }: MixedContentProps) {
                   name: chatBlock.speakerId || 'Unknown',
                 };
                 
-                // 交互表示の判定
-                if (lastSpeakerId !== speakerId) {
-                  alternateCount++;
-                  lastSpeakerId = speakerId;
+                // 左右配置の決定（優先順位: 本文中の<> > intervieweesのposition > 交互ロジック）
+                let isAlternate: boolean;
+                
+                if (chatBlock.position) {
+                  // 本文中の<>指定が最優先
+                  isAlternate = chatBlock.position === 'right';
+                } else if (speaker.position) {
+                  // intervieweesで指定されたposition
+                  isAlternate = speaker.position === 'right';
+                } else {
+                  // 通常の交互ロジック
+                  if (lastSpeakerId !== speakerId) {
+                    alternateCount++;
+                    lastSpeakerId = speakerId;
+                  }
+                  isAlternate = alternateCount % 2 === 0;
                 }
-                const isAlternate = alternateCount % 2 === 0;
                 
                 return (
                   <ChatBubble

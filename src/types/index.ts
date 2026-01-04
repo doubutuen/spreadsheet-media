@@ -24,8 +24,9 @@ export interface Article {
 export interface Interviewee {
   id: string;           // 発言者ID（例: "A", "B", "interviewer"）
   name: string;         // 表示名
-  role?: string;        // 役職・肩書き
+  role?: string;        // 役職・肌書き
   avatar?: string;      // アバター画像URL
+  position?: 'left' | 'right';  // チャットの左右配置（デフォルト）
 }
 
 // インタビュー発言の型定義（Markdown内で使用）

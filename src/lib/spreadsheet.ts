@@ -230,15 +230,17 @@ function convertThumbnailPath(thumbnail: string | undefined | null): string | un
 /**
  * インタビュー対象者のJSONをパース
  * avatarフィールドがGoogle Drive URLの場合はローカルパスに変換
+ * positionフィールドでチャットの左右配置を指定可能
  */
 function parseInterviewees(intervieweesStr: string | undefined | null): Interviewee[] | undefined {
   if (!intervieweesStr) return undefined;
   try {
     const interviewees = JSON.parse(intervieweesStr);
-    // 各intervieweeのavatarを変換
+    // 各intervieweeのavatarを変換、positionを保持
     return interviewees.map((i: any) => ({
       ...i,
-      avatar: i.avatar ? convertThumbnailPath(i.avatar) : undefined
+      avatar: i.avatar ? convertThumbnailPath(i.avatar) : undefined,
+      position: i.position === 'left' || i.position === 'right' ? i.position : undefined
     }));
   } catch {
     return undefined;
