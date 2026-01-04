@@ -97,8 +97,19 @@ const jsonLd = {
   }
 };
 
-// 記事タイプのラベル
-const articleTypeLabel = isInterview ? 'インタビュー' : (hasChat ? '会話形式' : null);
+// 記事タイプのラベル（showBadgeフィールドで制御）
+// showBadge: undefined/true → 自動判定, false → 非表示, 文字列 → カスタムテキスト
+let articleTypeLabel: string | null = null;
+if (article.showBadge === false) {
+  // 明示的にfalseの場合はバッジ非表示
+  articleTypeLabel = null;
+} else if (typeof article.showBadge === 'string') {
+  // カスタムテキストの場合
+  articleTypeLabel = article.showBadge;
+} else {
+  // undefinedまたはtrueの場合は自動判定
+  articleTypeLabel = isInterview ? 'インタビュー' : (hasChat ? '会話形式' : null);
+}
 
 // レイアウトのProps
 const layoutProps = {

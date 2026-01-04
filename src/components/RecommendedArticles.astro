@@ -56,7 +56,8 @@ const articlesJson = JSON.stringify(articles.map(a => ({
   thumbnail: a.thumbnail,
   content: a.content,
   publishedAt: a.publishedAt,
-  articleType: a.articleType
+  articleType: a.articleType,
+  showBadge: a.showBadge
 })));
 
 const categoriesJson = JSON.stringify(categories);
@@ -85,7 +86,16 @@ const authorsJson = JSON.stringify(authors);
     {popularArticles.map((article) => {
       const category = categoryMap.get(article.categoryId);
       const author = authorMap.get(article.authorId);
-      const articleTypeLabel = article.articleType === 'interview' ? 'インタビュー' : null;
+      // showBadgeフィールドでバッジ表示を制御
+      const hasChat = /【[^】]+】/.test(article.content);
+      let articleTypeLabel: string | null = null;
+      if (article.showBadge === false) {
+        articleTypeLabel = null;
+      } else if (typeof article.showBadge === 'string') {
+        articleTypeLabel = article.showBadge;
+      } else {
+        articleTypeLabel = article.articleType === 'interview' ? 'インタビュー' : (hasChat ? '会話形式' : null);
+      }
       
       return (
         <article class="card group overflow-hidden" data-article-slug={article.slug}>
@@ -213,7 +223,16 @@ const authorsJson = JSON.stringify(authors);
         // 記事カードを再生成
         articlesContainer.innerHTML = recommendedArticles.map((article: any) => {
           const category = categoryMap.get(article.categoryId);
-          const articleTypeLabel = article.articleType === 'interview' ? 'インタビュー' : null;
+          // showBadgeフィールドでバッジ表示を制御
+          const hasChat = /【[^】]+】/.test(article.content);
+          let articleTypeLabel: string | null = null;
+          if (article.showBadge === false) {
+            articleTypeLabel = null;
+          } else if (typeof article.showBadge === 'string') {
+            articleTypeLabel = article.showBadge;
+          } else {
+            articleTypeLabel = article.articleType === 'interview' ? 'インタビュー' : (hasChat ? '会話形式' : null);
+          }
           const excerpt = article.content
             .replace(/^\[speaker:\w+\]\s*$/gm, '')
             .replace(/^#+\s+.+$/gm, '')

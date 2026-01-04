@@ -29,8 +29,18 @@ const excerpt = article.content
   .trim()
   .slice(0, 150) + '...';
 
-// 記事タイプのラベル
-const articleTypeLabel = article.articleType === 'interview' ? 'インタビュー' : null;
+// 記事タイプのラベル（showBadgeフィールドで制御）
+// チャット記法の判定
+const hasChat = /【[^】]+】/.test(article.content);
+let articleTypeLabel: string | null = null;
+if (article.showBadge === false) {
+  articleTypeLabel = null;
+} else if (typeof article.showBadge === 'string') {
+  articleTypeLabel = article.showBadge;
+} else {
+  // undefinedまたはtrueの場合は自動判定
+  articleTypeLabel = article.articleType === 'interview' ? 'インタビュー' : (hasChat ? '会話形式' : null);
+}
 ---
 
 <article class="card group overflow-hidden">

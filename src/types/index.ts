@@ -18,6 +18,8 @@ export interface Article {
   articleType?: 'standard' | 'interview';  // 記事の種類
   // 新規追加: インタビュー用データ
   interviewees?: Interviewee[];  // インタビュー対象者
+  // 新規追加: バッジ表示制御
+  showBadge?: boolean | string;  // true/false または カスタムテキスト
 }
 
 // インタビュー対象者の型定義

@@ -131,7 +131,8 @@ function parseGASData(gasData: GASResponse): SpreadsheetData {
     thumbnail: convertThumbnailPath(a.thumbnail),
     images: parseImages(a.images),
     articleType: a.article_type || 'standard',
-    interviewees: parseInterviewees(a.interviewees)
+    interviewees: parseInterviewees(a.interviewees),
+    showBadge: parseShowBadge(a.show_badge)
   }));
 
   const categories: Category[] = (gasData.categories || []).map(c => ({
@@ -228,6 +229,30 @@ function convertThumbnailPath(thumbnail: string | undefined | null): string | un
 }
 
 /**
+ * show_badgeフィールドをパース
+ * - TRUE/true/1: trueを返す（自動判定でバッジ表示）
+ * - FALSE/false/0/空: falseを返す（バッジ非表示）
+ * - その他の文字列: カスタムバッジテキストとして返す
+ */
+function parseShowBadge(value: string | boolean | number | undefined | null): boolean | string | undefined {
+  if (value === undefined || value === null || value === '') return undefined;
+  
+  // ブール値の場合
+  if (typeof value === 'boolean') return value;
+  
+  // 数値の場合
+  if (typeof value === 'number') return value === 1;
+  
+  // 文字列の場合
+  const strValue = String(value).trim().toLowerCase();
+  if (strValue === 'true' || strValue === '1') return true;
+  if (strValue === 'false' || strValue === '0' || strValue === '') return false;
+  
+  // その他の文字列はカスタムバッジテキスト
+  return String(value).trim();
+}
+
+/**
  * インタビュー対象者のJSONをパース
  * avatarフィールドがGoogle Drive URLの場合はローカルパスに変換
  * positionフィールドでチャットの左右配置を指定可能
@@ -280,7 +305,8 @@ function getLocalData(): SpreadsheetData {
     thumbnail: convertThumbnailPath(a.thumbnail),
     images: parseImages(a.images),
     articleType: a.article_type || 'standard',
-    interviewees: parseInterviewees(a.interviewees)
+    interviewees: parseInterviewees(a.interviewees),
+    showBadge: parseShowBadge(a.show_badge)
   }));
 
   const categories: Category[] = (categoriesData as any[]).map(c => ({
