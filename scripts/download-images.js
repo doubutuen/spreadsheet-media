@@ -349,7 +349,50 @@ async function downloadImages() {
     }
     
     // ========================================
-    // 6. settings の favicon からGoogle Drive URLを抽出してダウンロード
+    // 6. articles の content（本文）内のGoogle Drive URLを抽出してダウンロード
+    // ========================================
+    console.log('\n--- Downloading images from article content ---');
+    
+    for (const article of articles) {
+      const content = article.content;
+      if (!content) continue;
+      
+      // Markdown画像記法からGoogle Drive URLを抽出: ![alt](url) または 生のURL
+      const driveUrlPattern = /https:\/\/drive\.google\.com\/[^\s\)\]"']+/g;
+      const matches = content.match(driveUrlPattern) || [];
+      
+      for (const url of matches) {
+        if (!isGoogleDriveUrl(url)) continue;
+        
+        const fileId = extractGoogleDriveFileId(url);
+        if (!fileId) continue;
+        
+        const filename = `gdrive_${fileId}.png`;
+        
+        if (downloadedFiles.has(filename)) continue;
+        
+        console.log(`\nDownloading content image from article "${article.title || article.slug}":`);
+        console.log(`  URL: ${url}`);
+        console.log(`  File ID: ${fileId}`);
+        
+        try {
+          const arrayBuffer = await downloadFromGoogleDrive(fileId);
+          const buffer = Buffer.from(arrayBuffer);
+          const outputPath = path.join(OUTPUT_DIR, filename);
+          fs.writeFileSync(outputPath, buffer);
+          
+          console.log(`  Saved: ${outputPath} (${(buffer.length / 1024 / 1024).toFixed(2)} MB)`);
+          downloadedFiles.add(filename);
+          successCount++;
+        } catch (error) {
+          console.error(`  Error: ${error.message}`);
+          failCount++;
+        }
+      }
+    }
+    
+    // ========================================
+    // 7. settings の favicon からGoogle Drive URLを抽出してダウンロード
     // ========================================
     console.log('\n--- Downloading favicon from settings ---');
     const settings = allData.settings || [];

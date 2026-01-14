@@ -120,7 +120,7 @@ function parseGASData(gasData: GASResponse): SpreadsheetData {
     id: Number(a.id),
     title: a.title || '',
     slug: a.slug || '',
-    content: a.content || '',
+    content: convertContentGoogleDriveUrls(a.content || ''),
     categoryId: Number(a.category_id),
     authorId: Number(a.author_id),
     tags: a.tags ? String(a.tags).split(',').map((t: string) => parseInt(t.trim())).filter(n => !isNaN(n)) : [],
@@ -229,6 +229,25 @@ function convertThumbnailPath(thumbnail: string | undefined | null): string | un
 }
 
 /**
+ * 本文中のGoogle Drive URLをローカルパスに変換
+ * Markdownの画像記法 ![alt](url) や生のURLを変換
+ */
+function convertContentGoogleDriveUrls(content: string): string {
+  if (!content) return content;
+  
+  // Google Drive URLのパターン
+  const driveUrlPattern = /https:\/\/drive\.google\.com\/[^\s\)\]"']+/g;
+  
+  return content.replace(driveUrlPattern, (url) => {
+    const fileId = extractGoogleDriveFileId(url);
+    if (fileId) {
+      return `/images/uploads/gdrive_${fileId}.png`;
+    }
+    return url;
+  });
+}
+
+/**
  * show_badgeフィールドをパース
  * - TRUE/true/1: trueを返す（自動判定でバッジ表示）
  * - FALSE/false/0/空: falseを返す（バッジ非表示）
@@ -293,7 +312,7 @@ function getLocalData(): SpreadsheetData {
     id: a.id,
     title: a.title,
     slug: a.slug,
-    content: a.content,
+    content: convertContentGoogleDriveUrls(a.content),
     categoryId: a.category_id,
     authorId: a.author_id,
     tags: a.tags ? a.tags.split(',').map((t: string) => parseInt(t.trim())) : [],
